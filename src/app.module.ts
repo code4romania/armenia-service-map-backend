@@ -7,6 +7,9 @@ import { validate } from './infrastructure/config/app.config.js';
 import { JwtAuthGuard } from './infrastructure/guards/jwt-auth.guard.js';
 import { RolesGuard } from './infrastructure/guards/roles.guard.js';
 import { AuthModule } from './modules/auth/auth.module.js';
+import { TaxonomyModule } from './modules/taxonomy/taxonomy.module.js';
+import { OrganisationsModule } from './modules/organisations/organisations.module.js';
+import { UsersModule } from './modules/users/users.module.js';
 import { ApiModule } from './api/api.module.js';
 
 @Module({
@@ -18,6 +21,9 @@ import { ApiModule } from './api/api.module.js';
     PrismaModule,
     InfrastructureModule,
     AuthModule,
+    TaxonomyModule,
+    OrganisationsModule,
+    UsersModule,
     ApiModule,
   ],
   providers: [
