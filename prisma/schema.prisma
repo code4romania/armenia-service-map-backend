@@ -1,0 +1,182 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  SUPER_ADMIN
+  ORG_ADMIN
+  ORG_MEMBER
+}
+
+enum NeedStatus {
+  NEW
+  ASSIGNED
+  RESOLVED
+  CLOSED
+}
+
+model Region {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  svgPathId String   @map("svg_path_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  organisations Organisation[]
+  services      Service[]
+  needReports   NeedReport[]
+  searchLogs    SearchLog[]
+
+  @@map("regions")
+}
+
+model Organisation {
+  id           String    @id @default(uuid())
+  name         String
+  description  String?
+  logoUrl      String?   @map("logo_url")
+  website      String?
+  contactEmail String?   @map("contact_email")
+  contactPhone String?   @map("contact_phone")
+  address      String?
+  regionId     String?   @map("region_id")
+  isActive     Boolean   @default(true) @map("is_active")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  region              Region?      @relation(fields: [regionId], references: [id])
+  users               User[]
+  services            Service[]
+  assignedNeedReports NeedReport[]
+
+  @@map("organisations")
+}
+
+model User {
+  id             String    @id @default(uuid())
+  email          String    @unique
+  passwordHash   String    @map("password_hash")
+  firstName      String    @map("first_name")
+  lastName       String    @map("last_name")
+  role           Role      @default(ORG_MEMBER)
+  organisationId String?   @map("organisation_id")
+  avatarUrl      String?   @map("avatar_url")
+  refreshToken   String?   @map("refresh_token")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  deletedAt      DateTime? @map("deleted_at")
+
+  organisation Organisation? @relation(fields: [organisationId], references: [id])
+
+  @@map("users")
+}
+
+model Topic {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  icon      String?
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  services ServiceTopic[]
+
+  @@map("topics")
+}
+
+model Service {
+  id                String    @id @default(uuid())
+  title             String
+  shortDescription  String    @map("short_description")
+  description       String
+  organisationId    String    @map("organisation_id")
+  regionId          String?   @map("region_id")
+  isAvailable       Boolean   @default(true) @map("is_available")
+  availabilityStart DateTime? @map("availability_start")
+  availabilityEnd   DateTime? @map("availability_end")
+  targetGroup       String[]  @map("target_group")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  deletedAt         DateTime? @map("deleted_at")
+
+  organisation Organisation @relation(fields: [organisationId], references: [id])
+  region       Region?      @relation(fields: [regionId], references: [id])
+  topics       ServiceTopic[]
+
+  @@map("services")
+}
+
+model ServiceTopic {
+  serviceId String @map("service_id")
+  topicId   String @map("topic_id")
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  topic   Topic   @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@id([serviceId, topicId])
+  @@map("service_topics")
+}
+
+model NeedTag {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  needReports NeedReportTag[]
+
+  @@map("need_tags")
+}
+
+model NeedReport {
+  id                     String     @id @default(uuid())
+  description            String
+  fullName               String     @map("full_name")
+  contactMethod          String     @map("contact_method")
+  contactValue           String     @map("contact_value")
+  regionId               String?    @map("region_id")
+  status                 NeedStatus @default(NEW)
+  assignedOrganisationId String?    @map("assigned_organisation_id")
+  createdAt              DateTime   @default(now()) @map("created_at")
+  updatedAt              DateTime   @updatedAt @map("updated_at")
+
+  region               Region?       @relation(fields: [regionId], references: [id])
+  assignedOrganisation Organisation? @relation(fields: [assignedOrganisationId], references: [id])
+  tags                 NeedReportTag[]
+
+  @@map("need_reports")
+}
+
+model NeedReportTag {
+  needReportId String @map("need_report_id")
+  needTagId    String @map("need_tag_id")
+
+  needReport NeedReport @relation(fields: [needReportId], references: [id], onDelete: Cascade)
+  needTag    NeedTag    @relation(fields: [needTagId], references: [id], onDelete: Cascade)
+
+  @@id([needReportId, needTagId])
+  @@map("need_report_tags")
+}
+
+model SearchLog {
+  id           String   @id @default(uuid())
+  query        String
+  regionId     String?  @map("region_id")
+  topicIds     String[] @map("topic_ids")
+  resultsCount Int      @map("results_count")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  region Region? @relation(fields: [regionId], references: [id])
+
+  @@map("search_logs")
+}
