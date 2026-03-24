@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TaxonomyModule } from '../modules/taxonomy/taxonomy.module.js';
 import { OrganisationsModule } from '../modules/organisations/organisations.module.js';
 import { UsersModule } from '../modules/users/users.module.js';
+import { ServicesModule } from '../modules/services/services.module.js';
 // Taxonomy
 import { GetManyTopicsUseCase } from './taxonomy/get-many-topics.usecase.js';
 import { CreateTopicUseCase } from './taxonomy/create-topic.usecase.js';
@@ -23,6 +24,13 @@ import { GetOneUserUseCase } from './users/get-one-user.usecase.js';
 import { CreateUserUseCase } from './users/create-user.usecase.js';
 import { UpdateUserUseCase } from './users/update-user.usecase.js';
 import { DeleteUserUseCase } from './users/delete-user.usecase.js';
+// Services
+import { GetManyServicesUseCase } from './services/get-many-services.usecase.js';
+import { GetOneServiceUseCase } from './services/get-one-service.usecase.js';
+import { CreateServiceUseCase } from './services/create-service.usecase.js';
+import { UpdateServiceUseCase } from './services/update-service.usecase.js';
+import { DeleteServiceUseCase } from './services/delete-service.usecase.js';
+import { SearchServicesUseCase } from './services/search-services.usecase.js';
 
 const taxonomyUseCases = [
   GetManyTopicsUseCase,
@@ -51,9 +59,18 @@ const userUseCases = [
   DeleteUserUseCase,
 ];
 
+const serviceUseCases = [
+  GetManyServicesUseCase,
+  GetOneServiceUseCase,
+  CreateServiceUseCase,
+  UpdateServiceUseCase,
+  DeleteServiceUseCase,
+  SearchServicesUseCase,
+];
+
 @Module({
-  imports: [TaxonomyModule, OrganisationsModule, UsersModule],
-  providers: [...taxonomyUseCases, ...organisationUseCases, ...userUseCases],
-  exports: [...taxonomyUseCases, ...organisationUseCases, ...userUseCases],
+  imports: [TaxonomyModule, OrganisationsModule, UsersModule, ServicesModule],
+  providers: [...taxonomyUseCases, ...organisationUseCases, ...userUseCases, ...serviceUseCases],
+  exports: [...taxonomyUseCases, ...organisationUseCases, ...userUseCases, ...serviceUseCases],
 })
 export class UseCaseModule {}

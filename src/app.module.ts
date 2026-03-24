@@ -10,6 +10,7 @@ import { AuthModule } from './modules/auth/auth.module.js';
 import { TaxonomyModule } from './modules/taxonomy/taxonomy.module.js';
 import { OrganisationsModule } from './modules/organisations/organisations.module.js';
 import { UsersModule } from './modules/users/users.module.js';
+import { ServicesModule } from './modules/services/services.module.js';
 import { ApiModule } from './api/api.module.js';
 
 @Module({
@@ -24,6 +25,7 @@ import { ApiModule } from './api/api.module.js';
     TaxonomyModule,
     OrganisationsModule,
     UsersModule,
+    ServicesModule,
     ApiModule,
   ],
   providers: [
