@@ -11,6 +11,7 @@ import { TaxonomyModule } from './modules/taxonomy/taxonomy.module.js';
 import { OrganisationsModule } from './modules/organisations/organisations.module.js';
 import { UsersModule } from './modules/users/users.module.js';
 import { ServicesModule } from './modules/services/services.module.js';
+import { NeedsModule } from './modules/needs/needs.module.js';
 import { ApiModule } from './api/api.module.js';
 
 @Module({
@@ -26,6 +27,7 @@ import { ApiModule } from './api/api.module.js';
     OrganisationsModule,
     UsersModule,
     ServicesModule,
+    NeedsModule,
     ApiModule,
   ],
   providers: [
