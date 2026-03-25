@@ -4,6 +4,7 @@ import { PrismaService } from '../../infrastructure/prisma/prisma.service.js';
 import { SearchServicesUseCase } from '../../usecases/services/search-services.usecase.js';
 import { GetOneServiceUseCase } from '../../usecases/services/get-one-service.usecase.js';
 import { CreateNeedUseCase } from '../../usecases/needs/create-need.usecase.js';
+import { LogSearchUseCase } from '../../usecases/analytics/log-search.usecase.js';
 import { ServiceQueryDto } from '../services/dto/service-query.dto.js';
 import { CreateNeedDto } from '../needs/dto/create-need.dto.js';
 
@@ -15,6 +16,7 @@ export class PublicController {
     private readonly searchServices: SearchServicesUseCase,
     private readonly getOneService: GetOneServiceUseCase,
     private readonly createNeed: CreateNeedUseCase,
+    private readonly logSearch: LogSearchUseCase,
   ) {}
 
   @Get('regions')
@@ -33,7 +35,16 @@ export class PublicController {
 
   @Get('services')
   async listServices(@Query() query: ServiceQueryDto) {
-    return this.searchServices.execute(query);
+    const result = await this.searchServices.execute(query);
+    if (query.search) {
+      this.logSearch.execute({
+        query: query.search,
+        regionId: query.regionId,
+        topicIds: query.topicId ? [query.topicId] : [],
+        resultsCount: result.meta.total,
+      }).catch(() => {});
+    }
+    return result;
   }
 
   @Get('services/:id')
