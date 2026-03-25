@@ -12,6 +12,7 @@ import { OrganisationsModule } from './modules/organisations/organisations.modul
 import { UsersModule } from './modules/users/users.module.js';
 import { ServicesModule } from './modules/services/services.module.js';
 import { NeedsModule } from './modules/needs/needs.module.js';
+import { AnalyticsModule } from './modules/analytics/analytics.module.js';
 import { ApiModule } from './api/api.module.js';
 
 @Module({
@@ -28,6 +29,7 @@ import { ApiModule } from './api/api.module.js';
     UsersModule,
     ServicesModule,
     NeedsModule,
+    AnalyticsModule,
     ApiModule,
   ],
   providers: [

@@ -4,6 +4,7 @@ import { OrganisationsModule } from '../modules/organisations/organisations.modu
 import { UsersModule } from '../modules/users/users.module.js';
 import { ServicesModule } from '../modules/services/services.module.js';
 import { NeedsModule } from '../modules/needs/needs.module.js';
+import { AnalyticsModule } from '../modules/analytics/analytics.module.js';
 // Taxonomy
 import { GetManyTopicsUseCase } from './taxonomy/get-many-topics.usecase.js';
 import { CreateTopicUseCase } from './taxonomy/create-topic.usecase.js';
@@ -40,6 +41,12 @@ import { UpdateNeedUseCase } from './needs/update-need.usecase.js';
 import { AssignNeedUseCase } from './needs/assign-need.usecase.js';
 import { DeleteNeedUseCase } from './needs/delete-need.usecase.js';
 import { GetNeedsMapUseCase } from './needs/get-needs-map.usecase.js';
+// Analytics
+import { LogSearchUseCase } from './analytics/log-search.usecase.js';
+import { GetOverviewUseCase } from './analytics/get-overview.usecase.js';
+import { GetSearchStatsUseCase } from './analytics/get-search-stats.usecase.js';
+import { GetFilterStatsUseCase } from './analytics/get-filter-stats.usecase.js';
+import { GetOrgOverviewUseCase } from './analytics/get-org-overview.usecase.js';
 
 const taxonomyUseCases = [
   GetManyTopicsUseCase,
@@ -87,9 +94,17 @@ const needUseCases = [
   GetNeedsMapUseCase,
 ];
 
+const analyticsUseCases = [
+  LogSearchUseCase,
+  GetOverviewUseCase,
+  GetSearchStatsUseCase,
+  GetFilterStatsUseCase,
+  GetOrgOverviewUseCase,
+];
+
 @Module({
-  imports: [TaxonomyModule, OrganisationsModule, UsersModule, ServicesModule, NeedsModule],
-  providers: [...taxonomyUseCases, ...organisationUseCases, ...userUseCases, ...serviceUseCases, ...needUseCases],
-  exports: [...taxonomyUseCases, ...organisationUseCases, ...userUseCases, ...serviceUseCases, ...needUseCases],
+  imports: [TaxonomyModule, OrganisationsModule, UsersModule, ServicesModule, NeedsModule, AnalyticsModule],
+  providers: [...taxonomyUseCases, ...organisationUseCases, ...userUseCases, ...serviceUseCases, ...needUseCases, ...analyticsUseCases],
+  exports: [...taxonomyUseCases, ...organisationUseCases, ...userUseCases, ...serviceUseCases, ...needUseCases, ...analyticsUseCases],
 })
 export class UseCaseModule {}
