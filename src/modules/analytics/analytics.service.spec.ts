@@ -71,4 +71,26 @@ describe('AnalyticsService', () => {
     expect(result.needReports[2].count).toBe(2);
     expect(result.services[1].count).toBe(5);
   });
+
+  it('returns organisation-scoped dashboard trends', async () => {
+    const now = new Date();
+    const currentMonthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+    const previousMonthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
+
+    const queryRaw = jest
+      .fn()
+      .mockResolvedValueOnce([{ month: currentMonthStart, count: 3n }])
+      .mockResolvedValueOnce([{ month: previousMonthStart, count: 4n }]);
+
+    const service = new AnalyticsService(
+      {
+        $queryRaw: queryRaw,
+      } as never,
+    );
+
+    const result = await service.getOrgDashboardTrends('org-1', 3);
+    expect(queryRaw).toHaveBeenCalledTimes(2);
+    expect(result.needReports[2].count).toBe(3);
+    expect(result.services[1].count).toBe(4);
+  });
 });

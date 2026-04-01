@@ -207,6 +207,20 @@ export class AnalyticsService {
     return { totalServices, activeServices, assignedNeeds, resolvedNeeds };
   }
 
+  async getOrgDashboardTrends(organisationId: string, months = 12) {
+    const safeMonths = this.normalizeLimit(months, 1, 24);
+    const [needs, services] = await Promise.all([
+      this.getMonthlyNeedTrendForOrganisation(organisationId, safeMonths),
+      this.getMonthlyServiceTrendForOrganisation(organisationId, safeMonths),
+    ]);
+
+    return {
+      months: needs.map((entry) => entry.month),
+      needReports: needs,
+      services,
+    };
+  }
+
   private async getFilterUsage(limit: number, order: SortDirection) {
     const safeLimit = this.normalizeLimit(limit, 1, 100);
     const sqlDirection = order === 'asc' ? 'ASC' : 'DESC';
@@ -277,6 +291,38 @@ export class AnalyticsService {
       ORDER BY 1 ASC
     `);
 
+    return this.normalizeMonthlyTrendRows(rows, months);
+  }
+
+  private async getMonthlyNeedTrendForOrganisation(organisationId: string, months: number): Promise<TrendPoint[]> {
+    const rows = await this.prisma.$queryRaw<{ month: Date; count: bigint }[]>`
+      SELECT
+        DATE_TRUNC('month', created_at) AS month,
+        COUNT(*)::int AS count
+      FROM need_reports
+      WHERE assigned_organisation_id = ${organisationId}
+        AND created_at >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '${months - 1} months'
+      GROUP BY 1
+      ORDER BY 1 ASC
+    `;
+    return this.normalizeMonthlyTrendRows(rows, months);
+  }
+
+  private async getMonthlyServiceTrendForOrganisation(organisationId: string, months: number): Promise<TrendPoint[]> {
+    const rows = await this.prisma.$queryRaw<{ month: Date; count: bigint }[]>`
+      SELECT
+        DATE_TRUNC('month', created_at) AS month,
+        COUNT(*)::int AS count
+      FROM services
+      WHERE organisation_id = ${organisationId}
+        AND created_at >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '${months - 1} months'
+      GROUP BY 1
+      ORDER BY 1 ASC
+    `;
+    return this.normalizeMonthlyTrendRows(rows, months);
+  }
+
+  private normalizeMonthlyTrendRows(rows: Array<{ month: Date; count: bigint }>, months: number): TrendPoint[] {
     const values = new Map(
       rows.map((row) => [
         `${row.month.getUTCFullYear()}-${String(row.month.getUTCMonth() + 1).padStart(2, '0')}`,
