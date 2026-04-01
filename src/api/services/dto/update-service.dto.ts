@@ -8,11 +8,23 @@ export class UpdateServiceDto {
 
   @IsOptional()
   @IsString()
+  titleHy?: string;
+
+  @IsOptional()
+  @IsString()
   shortDescription?: string;
 
   @IsOptional()
   @IsString()
+  shortDescriptionHy?: string;
+
+  @IsOptional()
+  @IsString()
   description?: string;
+
+  @IsOptional()
+  @IsString()
+  descriptionHy?: string;
 
   @IsOptional()
   @IsUUID()

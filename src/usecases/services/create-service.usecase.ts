@@ -7,8 +7,11 @@ export class CreateServiceUseCase {
   constructor(private readonly servicesService: ServicesService) {}
   async execute(data: {
     title: string;
+    titleHy?: string;
     shortDescription: string;
+    shortDescriptionHy?: string;
     description: string;
+    descriptionHy?: string;
     organisationId: string;
     regionId?: string;
     isAvailable?: boolean;

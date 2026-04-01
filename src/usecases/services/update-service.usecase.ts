@@ -7,8 +7,11 @@ export class UpdateServiceUseCase {
   constructor(private readonly servicesService: ServicesService) {}
   async execute(id: string, data: {
     title?: string;
+    titleHy?: string;
     shortDescription?: string;
+    shortDescriptionHy?: string;
     description?: string;
+    descriptionHy?: string;
     regionId?: string;
     isAvailable?: boolean;
     status?: ServiceStatus;

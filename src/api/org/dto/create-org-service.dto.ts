@@ -5,11 +5,23 @@ export class CreateOrgServiceDto {
   @IsString()
   title: string;
 
+  @IsOptional()
+  @IsString()
+  titleHy?: string;
+
   @IsString()
   shortDescription: string;
 
+  @IsOptional()
+  @IsString()
+  shortDescriptionHy?: string;
+
   @IsString()
   description: string;
+
+  @IsOptional()
+  @IsString()
+  descriptionHy?: string;
 
   @IsOptional()
   @IsUUID()

@@ -159,8 +159,11 @@ model Topic {
 model Service {
   id                String        @id @default(uuid())
   title             String
+  titleHy           String?       @map("title_hy")
   shortDescription  String        @map("short_description")
+  shortDescriptionHy String?      @map("short_description_hy")
   description       String
+  descriptionHy     String?       @map("description_hy")
   organisationId    String        @map("organisation_id")
   regionId          String?       @map("region_id")
   status            ServiceStatus @default(DRAFT)

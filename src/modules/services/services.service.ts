@@ -39,7 +39,11 @@ export class ServicesService {
         ? {
             OR: [
               { title: { contains: search, mode: 'insensitive' as const } },
+              { titleHy: { contains: search, mode: 'insensitive' as const } },
               { shortDescription: { contains: search, mode: 'insensitive' as const } },
+              { shortDescriptionHy: { contains: search, mode: 'insensitive' as const } },
+              { description: { contains: search, mode: 'insensitive' as const } },
+              { descriptionHy: { contains: search, mode: 'insensitive' as const } },
             ],
           }
         : {}),
@@ -70,8 +74,11 @@ export class ServicesService {
 
   async create(data: {
     title: string;
+    titleHy?: string;
     shortDescription: string;
+    shortDescriptionHy?: string;
     description: string;
+    descriptionHy?: string;
     organisationId: string;
     regionId?: string;
     isAvailable?: boolean;
@@ -98,8 +105,11 @@ export class ServicesService {
 
   async update(id: string, data: {
     title?: string;
+    titleHy?: string;
     shortDescription?: string;
+    shortDescriptionHy?: string;
     description?: string;
+    descriptionHy?: string;
     regionId?: string;
     isAvailable?: boolean;
     status?: ServiceStatus;
