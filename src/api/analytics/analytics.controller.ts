@@ -4,9 +4,11 @@ import { Role } from '../../common/enums/role.enum.js';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto.js';
 import { AnalyticsLimitQueryDto } from './dto/analytics-limit-query.dto.js';
 import { SearchFrequencyQueryDto } from './dto/search-frequency-query.dto.js';
+import { DashboardTrendsQueryDto } from './dto/dashboard-trends-query.dto.js';
 import { GetOverviewUseCase } from '../../usecases/analytics/get-overview.usecase.js';
 import { GetSearchStatsUseCase } from '../../usecases/analytics/get-search-stats.usecase.js';
 import { GetFilterStatsUseCase } from '../../usecases/analytics/get-filter-stats.usecase.js';
+import { GetDashboardTrendsUseCase } from '../../usecases/analytics/get-dashboard-trends.usecase.js';
 import { GetTopQueriesUseCase } from '../../usecases/analytics/get-top-queries.usecase.js';
 import { GetZeroResultQueriesUseCase } from '../../usecases/analytics/get-zero-result-queries.usecase.js';
 import { GetSearchFrequencyUseCase } from '../../usecases/analytics/get-search-frequency.usecase.js';
@@ -22,6 +24,7 @@ export class AnalyticsController {
     private readonly getOverview: GetOverviewUseCase,
     private readonly getSearchStats: GetSearchStatsUseCase,
     private readonly getFilterStats: GetFilterStatsUseCase,
+    private readonly getDashboardTrends: GetDashboardTrendsUseCase,
     private readonly getTopQueries: GetTopQueriesUseCase,
     private readonly getZeroResultQueries: GetZeroResultQueriesUseCase,
     private readonly getSearchFrequency: GetSearchFrequencyUseCase,
@@ -39,6 +42,11 @@ export class AnalyticsController {
   @Get('searches')
   async searches() {
     return this.getSearchStats.execute();
+  }
+
+  @Get('dashboard-trends')
+  async dashboardTrends(@Query() query: DashboardTrendsQueryDto) {
+    return this.getDashboardTrends.execute(query.months);
   }
 
   @Get('top-queries')

@@ -5,6 +5,7 @@ import { paginatedResult } from '../../infrastructure/base/base-crud.service.js'
 
 type SearchFrequencyPeriod = 'day' | 'week' | 'month';
 type SortDirection = 'asc' | 'desc';
+type TrendPoint = { month: string; count: number };
 
 @Injectable()
 export class AnalyticsService {
@@ -165,6 +166,18 @@ export class AnalyticsService {
     };
   }
 
+  async getDashboardTrends(months = 12) {
+    const safeMonths = this.normalizeLimit(months, 1, 24);
+    const needs = await this.getMonthlyTrend('need_reports', safeMonths);
+    const services = await this.getMonthlyTrend('services', safeMonths);
+
+    return {
+      months: needs.map((entry) => entry.month),
+      needReports: needs,
+      services,
+    };
+  }
+
   async getSearchStats() {
     const [topQueries, zeroResultQueries, dailyTrend] = await Promise.all([
       this.getTopQueries(20),
@@ -251,5 +264,36 @@ export class AnalyticsService {
   private normalizeSearchSortBy(sortBy?: string) {
     const allowed = new Set(['createdAt', 'query', 'resultsCount']);
     return sortBy && allowed.has(sortBy) ? sortBy : 'createdAt';
+  }
+
+  private async getMonthlyTrend(table: 'need_reports' | 'services', months: number): Promise<TrendPoint[]> {
+    const rows = await this.prisma.$queryRawUnsafe<{ month: Date; count: bigint }[]>(`
+      SELECT
+        DATE_TRUNC('month', created_at) AS month,
+        COUNT(*)::int AS count
+      FROM ${table}
+      WHERE created_at >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '${months - 1} months'
+      GROUP BY 1
+      ORDER BY 1 ASC
+    `);
+
+    const values = new Map(
+      rows.map((row) => [
+        `${row.month.getUTCFullYear()}-${String(row.month.getUTCMonth() + 1).padStart(2, '0')}`,
+        Number(row.count),
+      ]),
+    );
+
+    const result: TrendPoint[] = [];
+    const now = new Date();
+    for (let offset = months - 1; offset >= 0; offset -= 1) {
+      const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - offset, 1));
+      const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+      result.push({
+        month: key,
+        count: values.get(key) ?? 0,
+      });
+    }
+    return result;
   }
 }

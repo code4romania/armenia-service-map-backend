@@ -72,6 +72,7 @@ import { GetAllSearchesUseCase } from './analytics/get-all-searches.usecase.js';
 import { GetMostUsedFiltersUseCase } from './analytics/get-most-used-filters.usecase.js';
 import { GetLeastUsedFiltersUseCase } from './analytics/get-least-used-filters.usecase.js';
 import { GetFilterHeatmapUseCase } from './analytics/get-filter-heatmap.usecase.js';
+import { GetDashboardTrendsUseCase } from './analytics/get-dashboard-trends.usecase.js';
 // Upload
 import { GetPresignedUrlUseCase } from './upload/get-presigned-url.usecase.js';
 // Notifications
@@ -153,6 +154,7 @@ const analyticsUseCases = [
   GetMostUsedFiltersUseCase,
   GetLeastUsedFiltersUseCase,
   GetFilterHeatmapUseCase,
+  GetDashboardTrendsUseCase,
 ];
 
 const uploadUseCases = [GetPresignedUrlUseCase];

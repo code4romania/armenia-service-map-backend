@@ -47,4 +47,28 @@ describe('AnalyticsService', () => {
     expect(result.meta.total).toBe(1);
     expect(result.data[0].id).toBe('s1');
   });
+
+  it('returns month-aligned dashboard trends for needs and services', async () => {
+    const now = new Date();
+    const currentMonthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+    const previousMonthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
+
+    const queryRawUnsafe = jest
+      .fn()
+      .mockResolvedValueOnce([{ month: currentMonthStart, count: 2n }])
+      .mockResolvedValueOnce([{ month: previousMonthStart, count: 5n }]);
+
+    const service = new AnalyticsService(
+      {
+        $queryRawUnsafe: queryRawUnsafe,
+      } as never,
+    );
+
+    const result = await service.getDashboardTrends(3);
+    expect(queryRawUnsafe).toHaveBeenCalledTimes(2);
+    expect(result.needReports).toHaveLength(3);
+    expect(result.services).toHaveLength(3);
+    expect(result.needReports[2].count).toBe(2);
+    expect(result.services[1].count).toBe(5);
+  });
 });
