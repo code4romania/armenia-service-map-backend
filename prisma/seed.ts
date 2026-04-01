@@ -254,6 +254,18 @@ async function main() {
     }),
     prisma.user.create({
       data: {
+        email: 'org-member-pending@caritas.am',
+        passwordHash,
+        firstName: 'Narek',
+        lastName: 'Stepanyan',
+        phone: '+37431220004',
+        role: Role.ORG_MEMBER,
+        status: UserStatus.PENDING,
+        organisationId: getOrganisation('armenian-caritas').id,
+      },
+    }),
+    prisma.user.create({
+      data: {
         email: 'org-admin@peopleinneed.am',
         passwordHash,
         firstName: 'Sona',

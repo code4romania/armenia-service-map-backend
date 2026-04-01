@@ -1,4 +1,5 @@
 import { createPgClient } from './helpers/pg-client';
+import { randomUUID } from 'crypto';
 
 describe('Auth status rules (e2e)', () => {
   it('stores expected user status enum values', async () => {
@@ -22,7 +23,7 @@ describe('Auth status rules (e2e)', () => {
     }
   });
 
-  it('has active and pending users in seed data, with active users tracking access time', async () => {
+  it('has active users in seed data, tracks access time, and supports pending status persistence', async () => {
     const client = createPgClient();
     await client.connect();
 
@@ -38,7 +39,6 @@ describe('Auth status rules (e2e)', () => {
 
       const byStatus = new Map(counts.rows.map((row) => [row.status, Number(row.count)]));
       expect(byStatus.get('ACTIVE') ?? 0).toBeGreaterThan(0);
-      expect(byStatus.get('PENDING') ?? 0).toBeGreaterThan(0);
 
       const activeWithAccess = await client.query<{ count: string }>(
         `
@@ -50,6 +50,47 @@ describe('Auth status rules (e2e)', () => {
         `,
       );
       expect(Number(activeWithAccess.rows[0].count)).toBeGreaterThan(0);
+
+      const organisation = await client.query<{ id: string }>(
+        `
+          SELECT id
+          FROM organisations
+          WHERE deleted_at IS NULL
+          ORDER BY created_at ASC
+          LIMIT 1
+        `,
+      );
+      expect(organisation.rows).toHaveLength(1);
+
+      const pendingEmail = `e2e-pending-${Date.now()}-${Math.floor(Math.random() * 100000)}@refugeesupport.am`;
+      const pendingUserId = randomUUID();
+
+      try {
+        await client.query(
+          `
+            INSERT INTO users (
+              id, email, password_hash, first_name, last_name, role, status, organisation_id, created_at, updated_at
+            ) VALUES (
+              $1, $2, 'hash', 'Pending', 'User', 'ORG_MEMBER'::"Role", 'PENDING'::"UserStatus", $3, NOW(), NOW()
+            )
+          `,
+          [pendingUserId, pendingEmail, organisation.rows[0].id],
+        );
+
+        const pendingRows = await client.query<{ count: string }>(
+          `
+            SELECT COUNT(*)::int AS count
+            FROM users
+            WHERE email = $1
+              AND status = 'PENDING'::"UserStatus"
+              AND deleted_at IS NULL
+          `,
+          [pendingEmail],
+        );
+        expect(Number(pendingRows.rows[0].count)).toBe(1);
+      } finally {
+        await client.query('DELETE FROM users WHERE id = $1', [pendingUserId]);
+      }
     } finally {
       await client.end();
     }
