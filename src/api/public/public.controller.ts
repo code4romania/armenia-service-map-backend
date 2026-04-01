@@ -53,6 +53,15 @@ export class PublicController {
     });
   }
 
+  @Get('target-groups')
+  async listTargetGroups() {
+    return this.prisma.targetGroup.findMany({
+      where: { status: EntityStatus.ACTIVE },
+      orderBy: { name: 'asc' },
+      select: { id: true, name: true, status: true },
+    });
+  }
+
   @Get('services')
   async listServices(@Query() query: ServiceQueryDto) {
     const result = await this.searchServices.execute(query);
