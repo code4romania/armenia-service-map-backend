@@ -1,13 +1,14 @@
-import { Controller, Get, Post, Patch, Param, Body, Query, Req } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query, Req } from '@nestjs/common';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { Role } from '../../common/enums/role.enum.js';
-import { PaginationQueryDto } from '../../common/dto/pagination-query.dto.js';
 import { CreateOrgServiceDto } from './dto/create-org-service.dto.js';
 import { UpdateServiceDto } from '../services/dto/update-service.dto.js';
+import { ServiceQueryDto } from '../services/dto/service-query.dto.js';
 import { GetManyServicesUseCase } from '../../usecases/services/get-many-services.usecase.js';
 import { GetOneServiceUseCase } from '../../usecases/services/get-one-service.usecase.js';
 import { CreateServiceUseCase } from '../../usecases/services/create-service.usecase.js';
 import { UpdateServiceUseCase } from '../../usecases/services/update-service.usecase.js';
+import { DeleteServiceUseCase } from '../../usecases/services/delete-service.usecase.js';
 import { PublishServiceUseCase } from '../../usecases/services/publish-service.usecase.js';
 import { UnpublishServiceUseCase } from '../../usecases/services/unpublish-service.usecase.js';
 import { ServicesService } from '../../modules/services/services.service.js';
@@ -22,6 +23,7 @@ export class OrgServicesController {
     private readonly getOneService: GetOneServiceUseCase,
     private readonly createService: CreateServiceUseCase,
     private readonly updateService: UpdateServiceUseCase,
+    private readonly deleteService: DeleteServiceUseCase,
     private readonly publishService: PublishServiceUseCase,
     private readonly unpublishService: UnpublishServiceUseCase,
     private readonly servicesService: ServicesService,
@@ -35,7 +37,7 @@ export class OrgServicesController {
   }
 
   @Get()
-  async list(@Req() req: AuthenticatedRequest, @Query() query: PaginationQueryDto) {
+  async list(@Req() req: AuthenticatedRequest, @Query() query: ServiceQueryDto) {
     return this.getManyServices.execute({ ...query, organisationId: this.getOrgId(req) });
   }
 
@@ -63,6 +65,12 @@ export class OrgServicesController {
       availabilityStart: dto.availabilityStart ? new Date(dto.availabilityStart) : undefined,
       availabilityEnd: dto.availabilityEnd ? new Date(dto.availabilityEnd) : undefined,
     });
+  }
+
+  @Delete(':id')
+  async remove(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    await this.servicesService.verifyOwnership(id, this.getOrgId(req));
+    return this.deleteService.execute(id);
   }
 
   @Post(':id/publish')

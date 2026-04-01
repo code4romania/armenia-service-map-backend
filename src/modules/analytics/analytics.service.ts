@@ -200,7 +200,7 @@ export class AnalyticsService {
     const [totalServices, activeServices, assignedNeeds, resolvedNeeds] = await Promise.all([
       this.prisma.service.count({ where: { organisationId, deletedAt: null } }),
       this.prisma.service.count({ where: { organisationId, deletedAt: null, isAvailable: true } }),
-      this.prisma.needReport.count({ where: { assignedOrganisationId: organisationId, status: 'IN_PROGRESS' } }),
+      this.prisma.needReport.count({ where: { assignedOrganisationId: organisationId } }),
       this.prisma.needReport.count({ where: { assignedOrganisationId: organisationId, status: 'SOLVED' } }),
     ]);
 
