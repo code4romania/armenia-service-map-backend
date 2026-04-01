@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ServicesService } from '../../modules/services/services.service.js';
+import { ServiceStatus } from '../../common/enums/service-status.enum.js';
 
 @Injectable()
 export class CreateServiceUseCase {
@@ -11,9 +12,10 @@ export class CreateServiceUseCase {
     organisationId: string;
     regionId?: string;
     isAvailable?: boolean;
+    status?: ServiceStatus;
     availabilityStart?: Date;
     availabilityEnd?: Date;
-    targetGroup?: string[];
+    targetGroupIds?: string[];
     topicIds?: string[];
   }) {
     return this.servicesService.create(data);

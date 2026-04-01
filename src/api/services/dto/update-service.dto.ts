@@ -1,4 +1,5 @@
-import { IsString, IsOptional, IsBoolean, IsUUID, IsArray, IsDateString } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsUUID, IsArray, IsDateString, IsEnum } from 'class-validator';
+import { ServiceStatus } from '../../../common/enums/service-status.enum.js';
 
 export class UpdateServiceDto {
   @IsOptional()
@@ -22,6 +23,10 @@ export class UpdateServiceDto {
   isAvailable?: boolean;
 
   @IsOptional()
+  @IsEnum(ServiceStatus)
+  status?: ServiceStatus;
+
+  @IsOptional()
   @IsDateString()
   availabilityStart?: string;
 
@@ -31,8 +36,8 @@ export class UpdateServiceDto {
 
   @IsOptional()
   @IsArray()
-  @IsString({ each: true })
-  targetGroup?: string[];
+  @IsUUID(undefined, { each: true })
+  targetGroupIds?: string[];
 
   @IsOptional()
   @IsArray()

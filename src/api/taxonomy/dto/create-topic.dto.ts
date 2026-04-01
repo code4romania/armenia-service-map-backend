@@ -1,4 +1,5 @@
-import { IsString, IsOptional, IsInt, Min } from 'class-validator';
+import { IsString, IsOptional, IsInt, Min, IsEnum, IsUUID } from 'class-validator';
+import { EntityStatus } from '../../../common/enums/entity-status.enum.js';
 
 export class CreateTopicDto {
   @IsString()
@@ -10,6 +11,14 @@ export class CreateTopicDto {
   @IsOptional()
   @IsString()
   icon?: string;
+
+  @IsOptional()
+  @IsUUID()
+  parentId?: string;
+
+  @IsOptional()
+  @IsEnum(EntityStatus)
+  status?: EntityStatus;
 
   @IsOptional()
   @IsInt()

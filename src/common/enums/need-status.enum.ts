@@ -1,6 +1,6 @@
 export enum NeedStatus {
   NEW = 'NEW',
-  ASSIGNED = 'ASSIGNED',
-  RESOLVED = 'RESOLVED',
+  IN_PROGRESS = 'IN_PROGRESS',
+  SOLVED = 'SOLVED',
   CLOSED = 'CLOSED',
 }

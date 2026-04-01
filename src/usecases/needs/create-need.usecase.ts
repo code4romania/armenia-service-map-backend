@@ -5,6 +5,7 @@ import { NeedsService } from '../../modules/needs/needs.service.js';
 export class CreateNeedUseCase {
   constructor(private readonly needsService: NeedsService) {}
   async execute(data: {
+    title?: string;
     description: string;
     fullName: string;
     contactMethod: string;

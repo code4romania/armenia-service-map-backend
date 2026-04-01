@@ -1,6 +1,10 @@
 import { IsString, IsOptional, IsUUID, IsArray } from 'class-validator';
 
 export class CreateNeedDto {
+  @IsOptional()
+  @IsString()
+  title?: string;
+
   @IsString()
   description: string;
 

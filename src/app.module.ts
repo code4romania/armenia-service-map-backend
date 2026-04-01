@@ -13,6 +13,9 @@ import { UsersModule } from './modules/users/users.module.js';
 import { ServicesModule } from './modules/services/services.module.js';
 import { NeedsModule } from './modules/needs/needs.module.js';
 import { AnalyticsModule } from './modules/analytics/analytics.module.js';
+import { UploadModule } from './modules/upload/upload.module.js';
+import { EmailModule } from './modules/email/email.module.js';
+import { NotificationsModule } from './modules/notifications/notifications.module.js';
 import { ApiModule } from './api/api.module.js';
 
 @Module({
@@ -30,6 +33,9 @@ import { ApiModule } from './api/api.module.js';
     ServicesModule,
     NeedsModule,
     AnalyticsModule,
+    UploadModule,
+    EmailModule,
+    NotificationsModule,
     ApiModule,
   ],
   providers: [

@@ -3,6 +3,7 @@ import { PrismaService } from '../../infrastructure/prisma/prisma.service.js';
 import { DomainExceptionService } from '../../infrastructure/exceptions/domain-exception.service.js';
 import { PaginationQuery } from '../../common/interfaces/pagination.interface.js';
 import { paginatedResult } from '../../infrastructure/base/base-crud.service.js';
+import { OrganisationStatus } from '../../common/enums/organisation-status.enum.js';
 
 @Injectable()
 export class OrganisationsService {
@@ -11,10 +12,11 @@ export class OrganisationsService {
     private readonly exceptions: DomainExceptionService,
   ) {}
 
-  async findMany(query: PaginationQuery & { search?: string }) {
-    const { page = 1, perPage = 10, sortBy = 'name', sortOrder = 'asc', search } = query;
+  async findMany(query: PaginationQuery & { search?: string; status?: OrganisationStatus }) {
+    const { page = 1, perPage = 10, sortBy = 'name', sortOrder = 'asc', search, status } = query;
     const where = {
       deletedAt: null,
+      ...(status ? { status } : {}),
       ...(search ? { name: { contains: search, mode: 'insensitive' as const } } : {}),
     };
 
@@ -53,11 +55,27 @@ export class OrganisationsService {
 
   async create(data: {
     name: string;
+    legalName?: string;
     description?: string;
     website?: string;
-    contactEmail?: string;
-    contactPhone?: string;
-    address?: string;
+    country?: string;
+    streetAddress?: string;
+    location?: string;
+    organisationType?: string;
+    uniqueIdentifier?: string;
+    category?: string;
+    activityDomain?: string;
+    legalRepName?: string;
+    legalRepEmail?: string;
+    legalRepPhone?: string;
+    contactPersonName?: string;
+    contactPersonEmail?: string;
+    contactPersonPhone?: string;
+    legalDocumentUrl?: string;
+    logoUrl?: string;
+    observations?: string;
+    tags?: string[];
+    status?: OrganisationStatus;
     regionId?: string;
   }) {
     return this.prisma.organisation.create({
@@ -68,13 +86,28 @@ export class OrganisationsService {
 
   async update(id: string, data: {
     name?: string;
+    legalName?: string;
     description?: string;
     website?: string;
-    contactEmail?: string;
-    contactPhone?: string;
-    address?: string;
+    country?: string;
+    streetAddress?: string;
+    location?: string;
+    organisationType?: string;
+    uniqueIdentifier?: string;
+    category?: string;
+    activityDomain?: string;
+    legalRepName?: string;
+    legalRepEmail?: string;
+    legalRepPhone?: string;
+    contactPersonName?: string;
+    contactPersonEmail?: string;
+    contactPersonPhone?: string;
+    legalDocumentUrl?: string;
+    logoUrl?: string;
+    observations?: string;
+    tags?: string[];
+    status?: OrganisationStatus;
     regionId?: string;
-    isActive?: boolean;
   }) {
     await this.findOne(id);
     return this.prisma.organisation.update({

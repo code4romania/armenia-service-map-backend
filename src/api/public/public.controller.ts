@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, Query, Body } from '@nestjs/common';
+import { Controller, Get, Post, Param, Query, Body, NotFoundException } from '@nestjs/common';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service.js';
 import { SearchServicesUseCase } from '../../usecases/services/search-services.usecase.js';
@@ -7,6 +7,8 @@ import { CreateNeedUseCase } from '../../usecases/needs/create-need.usecase.js';
 import { LogSearchUseCase } from '../../usecases/analytics/log-search.usecase.js';
 import { ServiceQueryDto } from '../services/dto/service-query.dto.js';
 import { CreateNeedDto } from '../needs/dto/create-need.dto.js';
+import { EntityStatus } from '../../common/enums/entity-status.enum.js';
+import { ServiceStatus } from '../../common/enums/service-status.enum.js';
 
 @Controller('public')
 @Public()
@@ -26,10 +28,28 @@ export class PublicController {
     });
   }
 
+  @Get('regions/service-counts')
+  async regionServiceCounts() {
+    const regions = await this.prisma.region.findMany({
+      select: { svgPathId: true, _count: { select: { services: true } } },
+    });
+    return Object.fromEntries(
+      regions.map((r) => [r.svgPathId, r._count.services]),
+    );
+  }
+
   @Get('topics')
   async listTopics() {
     return this.prisma.topic.findMany({
+      where: { parentId: null, status: EntityStatus.ACTIVE },
       orderBy: { sortOrder: 'asc' },
+      include: {
+        children: {
+          where: { status: EntityStatus.ACTIVE },
+          orderBy: { sortOrder: 'asc' },
+          select: { id: true, name: true, slug: true, status: true, sortOrder: true },
+        },
+      },
     });
   }
 
@@ -49,7 +69,11 @@ export class PublicController {
 
   @Get('services/:id')
   async getService(@Param('id') id: string) {
-    return this.getOneService.execute(id);
+    const service = await this.getOneService.execute(id);
+    if (service.status !== ServiceStatus.PUBLISHED) {
+      throw new NotFoundException('Service not found');
+    }
+    return service;
   }
 
   @Post('needs')

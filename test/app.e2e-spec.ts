@@ -1,25 +1,20 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
-import { App } from 'supertest/types';
-import { AppModule } from './../src/app.module';
+import { Client } from 'pg';
 
-describe('AppController (e2e)', () => {
-  let app: INestApplication<App>;
+describe('Database seed smoke (e2e)', () => {
+  const connectionString =
+    process.env.DATABASE_URL ||
+    'postgresql://armenia_user:armenia_pass@localhost:5432/armenia_service_map';
 
-  beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    await app.init();
-  });
-
-  it('/ (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/')
-      .expect(200)
-      .expect('Hello World!');
+  it('has seeded regions and users', async () => {
+    const client = new Client({ connectionString });
+    await client.connect();
+    try {
+      const regions = await client.query<{ count: string }>('SELECT COUNT(*)::int AS count FROM regions');
+      const users = await client.query<{ count: string }>('SELECT COUNT(*)::int AS count FROM users');
+      expect(Number(regions.rows[0].count)).toBeGreaterThan(0);
+      expect(Number(users.rows[0].count)).toBeGreaterThan(0);
+    } finally {
+      await client.end();
+    }
   });
 });

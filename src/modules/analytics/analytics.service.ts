@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service.js';
+import { PaginationQuery } from '../../common/interfaces/pagination.interface.js';
+import { paginatedResult } from '../../infrastructure/base/base-crud.service.js';
+
+type SearchFrequencyPeriod = 'day' | 'week' | 'month';
+type SortDirection = 'asc' | 'desc';
 
 @Injectable()
 export class AnalyticsService {
@@ -22,13 +27,18 @@ export class AnalyticsService {
   }
 
   async getOverview() {
-    const [totalServices, totalOrganisations, totalNeedReports, totalSearches, newNeeds, resolvedNeeds] = await Promise.all([
+    const [totalServices, totalOrganisations, totalNeedReports, totalSearches, totalZeroResultSearches, uniqueSearchCountRow, newNeeds, resolvedNeeds] = await Promise.all([
       this.prisma.service.count({ where: { deletedAt: null } }),
       this.prisma.organisation.count({ where: { deletedAt: null } }),
       this.prisma.needReport.count(),
       this.prisma.searchLog.count(),
+      this.prisma.searchLog.count({ where: { resultsCount: 0 } }),
+      this.prisma.$queryRaw<{ count: bigint }[]>`
+        SELECT COUNT(DISTINCT query)::int AS count
+        FROM search_logs
+      `,
       this.prisma.needReport.count({ where: { status: 'NEW' } }),
-      this.prisma.needReport.count({ where: { status: 'RESOLVED' } }),
+      this.prisma.needReport.count({ where: { status: 'SOLVED' } }),
     ]);
 
     return {
@@ -36,90 +46,210 @@ export class AnalyticsService {
       totalOrganisations,
       totalNeedReports,
       totalSearches,
+      totalZeroResultSearches,
+      totalUniqueSearches: Number(uniqueSearchCountRow[0]?.count ?? 0),
       newNeeds,
       resolvedNeeds,
     };
   }
 
-  async getSearchStats() {
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  async getTopQueries(limit = 10) {
+    const safeLimit = this.normalizeLimit(limit, 1, 100);
+    const topQueries = await this.prisma.searchLog.groupBy({
+      by: ['query'],
+      _count: { id: true },
+      orderBy: { _count: { id: 'desc' } },
+      take: safeLimit,
+    });
 
-    const [topQueries, zeroResultQueries, dailyTrend] = await Promise.all([
-      this.prisma.searchLog.groupBy({
-        by: ['query'],
-        _count: { id: true },
-        orderBy: { _count: { id: 'desc' } },
-        take: 20,
-      }),
-      this.prisma.searchLog.groupBy({
-        by: ['query'],
-        where: { resultsCount: 0 },
-        _count: { id: true },
-        orderBy: { _count: { id: 'desc' } },
-        take: 20,
-      }),
-      this.prisma.$queryRaw<{ date: string; count: bigint }[]>`
-        SELECT DATE(created_at) as date, COUNT(*)::int as count
+    return topQueries.map((q) => ({ query: q.query, count: q._count.id }));
+  }
+
+  async getZeroResultQueries(limit = 10) {
+    const safeLimit = this.normalizeLimit(limit, 1, 100);
+    const zeroResultQueries = await this.prisma.searchLog.groupBy({
+      by: ['query'],
+      where: { resultsCount: 0 },
+      _count: { id: true },
+      orderBy: { _count: { id: 'desc' } },
+      take: safeLimit,
+    });
+
+    return zeroResultQueries.map((q) => ({ query: q.query, count: q._count.id }));
+  }
+
+  async getSearchFrequency(period: SearchFrequencyPeriod = 'day', limit = 30) {
+    const safeLimit = this.normalizeLimit(limit, 1, 365);
+    const safePeriod = period === 'week' || period === 'month' ? period : 'day';
+
+    const frequencyRows = await this.prisma.$queryRawUnsafe<{ bucket: Date; count: number }[]>(`
+      SELECT bucket, count
+      FROM (
+        SELECT DATE_TRUNC('${safePeriod}', created_at) AS bucket, COUNT(*)::int AS count
         FROM search_logs
-        WHERE created_at >= ${thirtyDaysAgo}
-        GROUP BY DATE(created_at)
-        ORDER BY date ASC
+        GROUP BY 1
+        ORDER BY 1 DESC
+        LIMIT ${safeLimit}
+      ) ranked
+      ORDER BY bucket ASC
+    `);
+
+    return frequencyRows.map((row) => ({
+      period: safePeriod,
+      bucketStart: row.bucket,
+      count: Number(row.count),
+    }));
+  }
+
+  async getAllSearches(query: PaginationQuery & { search?: string }) {
+    const { page = 1, perPage = 20, sortBy = 'createdAt', sortOrder = 'desc', search } = query;
+    const safeSortBy = this.normalizeSearchSortBy(sortBy);
+    const safeSortOrder: SortDirection = sortOrder === 'asc' ? 'asc' : 'desc';
+    const where = search
+      ? {
+          query: { contains: search, mode: 'insensitive' as const },
+        }
+      : {};
+
+    const [data, total] = await Promise.all([
+      this.prisma.searchLog.findMany({
+        where,
+        orderBy: { [safeSortBy]: safeSortOrder },
+        skip: (page - 1) * perPage,
+        take: perPage,
+      }),
+      this.prisma.searchLog.count({ where }),
+    ]);
+
+    return paginatedResult(data, total, page, perPage);
+  }
+
+  async getMostUsedFilters(limit = 10) {
+    return this.getFilterUsage(limit, 'desc');
+  }
+
+  async getLeastUsedFilters(limit = 10) {
+    return this.getFilterUsage(limit, 'asc');
+  }
+
+  async getFilterHeatmap() {
+    const [regions, topics, matrixRows] = await Promise.all([
+      this.prisma.region.findMany({
+        select: { id: true, name: true },
+        orderBy: { name: 'asc' },
+      }),
+      this.prisma.topic.findMany({
+        select: { id: true, name: true },
+        orderBy: { name: 'asc' },
+      }),
+      this.prisma.$queryRaw<{ topicId: string; regionId: string; count: bigint }[]>`
+        SELECT
+          unnest(topic_ids) AS "topicId",
+          region_id AS "regionId",
+          COUNT(*)::int AS count
+        FROM search_logs
+        WHERE region_id IS NOT NULL
+          AND array_length(topic_ids, 1) > 0
+        GROUP BY unnest(topic_ids), region_id
       `,
     ]);
 
     return {
-      topQueries: topQueries.map((q) => ({ query: q.query, count: q._count.id })),
-      zeroResultQueries: zeroResultQueries.map((q) => ({ query: q.query, count: q._count.id })),
-      dailyTrend: dailyTrend.map((d) => ({ date: d.date, count: Number(d.count) })),
+      regions,
+      topics,
+      matrix: matrixRows.map((row) => ({
+        topicId: row.topicId,
+        regionId: row.regionId,
+        count: Number(row.count),
+      })),
+    };
+  }
+
+  async getSearchStats() {
+    const [topQueries, zeroResultQueries, dailyTrend] = await Promise.all([
+      this.getTopQueries(20),
+      this.getZeroResultQueries(20),
+      this.getSearchFrequency('day', 30),
+    ]);
+
+    return {
+      topQueries,
+      zeroResultQueries,
+      dailyTrend: dailyTrend.map((item) => ({ date: item.bucketStart, count: item.count })),
     };
   }
 
   async getFilterStats() {
-    const [regionUsage, topicUsage] = await Promise.all([
-      this.prisma.searchLog.groupBy({
-        by: ['regionId'],
-        where: { regionId: { not: null } },
-        _count: { id: true },
-        orderBy: { _count: { id: 'desc' } },
-      }),
-      this.prisma.$queryRaw<{ topic_id: string; count: bigint }[]>`
-        SELECT unnest(topic_ids) as topic_id, COUNT(*)::int as count
-        FROM search_logs
-        WHERE array_length(topic_ids, 1) > 0
-        GROUP BY topic_id
-        ORDER BY count DESC
-      `,
-    ]);
-
-    const regions = await this.prisma.region.findMany({
-      select: { id: true, name: true, svgPathId: true },
-    });
-
-    const topics = await this.prisma.topic.findMany({
-      select: { id: true, name: true },
-    });
-
-    return {
-      regionUsage: regions.map((r) => {
-        const match = regionUsage.find((ru) => ru.regionId === r.id);
-        return { regionId: r.id, regionName: r.name, svgPathId: r.svgPathId, count: match?._count.id ?? 0 };
-      }),
-      topicUsage: topicUsage.map((tu) => {
-        const topic = topics.find((t) => t.id === tu.topic_id);
-        return { topicId: tu.topic_id, topicName: topic?.name || 'Unknown', count: Number(tu.count) };
-      }),
-    };
+    return this.getMostUsedFilters(20);
   }
 
   async getOrgOverview(organisationId: string) {
     const [totalServices, activeServices, assignedNeeds, resolvedNeeds] = await Promise.all([
       this.prisma.service.count({ where: { organisationId, deletedAt: null } }),
       this.prisma.service.count({ where: { organisationId, deletedAt: null, isAvailable: true } }),
-      this.prisma.needReport.count({ where: { assignedOrganisationId: organisationId, status: 'ASSIGNED' } }),
-      this.prisma.needReport.count({ where: { assignedOrganisationId: organisationId, status: 'RESOLVED' } }),
+      this.prisma.needReport.count({ where: { assignedOrganisationId: organisationId, status: 'IN_PROGRESS' } }),
+      this.prisma.needReport.count({ where: { assignedOrganisationId: organisationId, status: 'SOLVED' } }),
     ]);
 
     return { totalServices, activeServices, assignedNeeds, resolvedNeeds };
+  }
+
+  private async getFilterUsage(limit: number, order: SortDirection) {
+    const safeLimit = this.normalizeLimit(limit, 1, 100);
+    const sqlDirection = order === 'asc' ? 'ASC' : 'DESC';
+
+    const [regionUsage, topicUsage, regions, topics] = await Promise.all([
+      this.prisma.searchLog.groupBy({
+        by: ['regionId'],
+        where: { regionId: { not: null } },
+        _count: { id: true },
+        orderBy: { _count: { id: order } },
+        take: safeLimit,
+      }),
+      this.prisma.$queryRawUnsafe<{ topicId: string; count: bigint }[]>(`
+        SELECT unnest(topic_ids) AS "topicId", COUNT(*)::int AS count
+        FROM search_logs
+        WHERE array_length(topic_ids, 1) > 0
+        GROUP BY unnest(topic_ids)
+        ORDER BY count ${sqlDirection}
+        LIMIT ${safeLimit}
+      `),
+      this.prisma.region.findMany({
+        select: { id: true, name: true, svgPathId: true },
+      }),
+      this.prisma.topic.findMany({
+        select: { id: true, name: true },
+      }),
+    ]);
+
+    return {
+      regionUsage: regionUsage.map((entry) => {
+        const region = regions.find((item) => item.id === entry.regionId);
+        return {
+          regionId: entry.regionId!,
+          regionName: region?.name ?? 'Unknown',
+          svgPathId: region?.svgPathId ?? null,
+          count: entry._count.id,
+        };
+      }),
+      topicUsage: topicUsage.map((entry) => {
+        const topic = topics.find((item) => item.id === entry.topicId);
+        return {
+          topicId: entry.topicId,
+          topicName: topic?.name ?? 'Unknown',
+          count: Number(entry.count),
+        };
+      }),
+    };
+  }
+
+  private normalizeLimit(limit: number, min: number, max: number) {
+    if (!Number.isFinite(limit)) return min;
+    return Math.min(Math.max(Math.floor(limit), min), max);
+  }
+
+  private normalizeSearchSortBy(sortBy?: string) {
+    const allowed = new Set(['createdAt', 'query', 'resultsCount']);
+    return sortBy && allowed.has(sortBy) ? sortBy : 'createdAt';
   }
 }

@@ -3,6 +3,7 @@ import { PrismaService } from '../../infrastructure/prisma/prisma.service.js';
 import { DomainExceptionService } from '../../infrastructure/exceptions/domain-exception.service.js';
 import { PaginationQuery } from '../../common/interfaces/pagination.interface.js';
 import { paginatedResult } from '../../infrastructure/base/base-crud.service.js';
+import { EntityStatus } from '../../common/enums/entity-status.enum.js';
 
 @Injectable()
 export class TaxonomyService {
@@ -13,11 +14,14 @@ export class TaxonomyService {
 
   // ---- Topics ----
 
-  async findManyTopics(query: PaginationQuery & { search?: string }) {
-    const { page = 1, perPage = 10, sortBy = 'sortOrder', sortOrder = 'asc', search } = query;
+  async findManyTopics(query: PaginationQuery & { search?: string; status?: EntityStatus }) {
+    const { page = 1, perPage = 10, sortBy = 'sortOrder', sortOrder = 'asc', search, status } = query;
     const where = search
-      ? { name: { contains: search, mode: 'insensitive' as const } }
-      : {};
+      ? {
+          ...(status ? { status } : {}),
+          name: { contains: search, mode: 'insensitive' as const },
+        }
+      : { ...(status ? { status } : {}) };
 
     const [data, total] = await Promise.all([
       this.prisma.topic.findMany({
@@ -25,7 +29,11 @@ export class TaxonomyService {
         orderBy: { [sortBy]: sortOrder },
         skip: (page - 1) * perPage,
         take: perPage,
-        include: { _count: { select: { services: true } } },
+        include: {
+          parent: { select: { id: true, name: true } },
+          children: { select: { id: true, name: true, status: true } },
+          _count: { select: { services: true } },
+        },
       }),
       this.prisma.topic.count({ where }),
     ]);
@@ -36,19 +44,28 @@ export class TaxonomyService {
   async findOneTopic(id: string) {
     const topic = await this.prisma.topic.findUnique({
       where: { id },
-      include: { _count: { select: { services: true } } },
+      include: {
+        parent: { select: { id: true, name: true } },
+        children: { select: { id: true, name: true, status: true } },
+        _count: { select: { services: true } },
+      },
     });
     if (!topic) throw this.exceptions.notFound('Topic', id);
     return topic;
   }
 
-  async createTopic(data: { name: string; slug: string; icon?: string; sortOrder?: number }) {
+  async createTopic(data: { name: string; slug: string; icon?: string; parentId?: string; status?: EntityStatus; sortOrder?: number }) {
     const existing = await this.prisma.topic.findUnique({ where: { slug: data.slug } });
     if (existing) throw this.exceptions.conflict('Topic', `Slug "${data.slug}" already exists`);
-    return this.prisma.topic.create({ data });
+    return this.prisma.topic.create({
+      data: {
+        ...data,
+        status: data.status ?? EntityStatus.ACTIVE,
+      },
+    });
   }
 
-  async updateTopic(id: string, data: { name?: string; slug?: string; icon?: string; sortOrder?: number }) {
+  async updateTopic(id: string, data: { name?: string; slug?: string; icon?: string; parentId?: string | null; status?: EntityStatus; sortOrder?: number }) {
     await this.findOneTopic(id);
     if (data.slug) {
       const existing = await this.prisma.topic.findFirst({ where: { slug: data.slug, id: { not: id } } });
@@ -59,16 +76,40 @@ export class TaxonomyService {
 
   async deleteTopic(id: string) {
     await this.findOneTopic(id);
+    const usage = await this.prisma.serviceTopic.count({ where: { topicId: id } });
+    if (usage > 0) {
+      return this.prisma.topic.update({
+        where: { id },
+        data: { status: EntityStatus.INACTIVE },
+      });
+    }
     await this.prisma.topic.delete({ where: { id } });
+  }
+
+  async getTopicTree() {
+    return this.prisma.topic.findMany({
+      where: { parentId: null },
+      orderBy: { sortOrder: 'asc' },
+      include: {
+        children: {
+          orderBy: { sortOrder: 'asc' },
+          select: { id: true, name: true, slug: true, status: true, sortOrder: true },
+        },
+        _count: { select: { services: true } },
+      },
+    });
   }
 
   // ---- Need Tags ----
 
-  async findManyNeedTags(query: PaginationQuery & { search?: string }) {
-    const { page = 1, perPage = 10, sortBy = 'name', sortOrder = 'asc', search } = query;
+  async findManyNeedTags(query: PaginationQuery & { search?: string; status?: EntityStatus }) {
+    const { page = 1, perPage = 10, sortBy = 'name', sortOrder = 'asc', search, status } = query;
     const where = search
-      ? { name: { contains: search, mode: 'insensitive' as const } }
-      : {};
+      ? {
+          ...(status ? { status } : {}),
+          name: { contains: search, mode: 'insensitive' as const },
+        }
+      : { ...(status ? { status } : {}) };
 
     const [data, total] = await Promise.all([
       this.prisma.needTag.findMany({
@@ -93,13 +134,18 @@ export class TaxonomyService {
     return tag;
   }
 
-  async createNeedTag(data: { name: string; slug: string }) {
+  async createNeedTag(data: { name: string; slug: string; status?: EntityStatus }) {
     const existing = await this.prisma.needTag.findUnique({ where: { slug: data.slug } });
     if (existing) throw this.exceptions.conflict('NeedTag', `Slug "${data.slug}" already exists`);
-    return this.prisma.needTag.create({ data });
+    return this.prisma.needTag.create({
+      data: {
+        ...data,
+        status: data.status ?? EntityStatus.ACTIVE,
+      },
+    });
   }
 
-  async updateNeedTag(id: string, data: { name?: string; slug?: string }) {
+  async updateNeedTag(id: string, data: { name?: string; slug?: string; status?: EntityStatus }) {
     await this.findOneNeedTag(id);
     if (data.slug) {
       const existing = await this.prisma.needTag.findFirst({ where: { slug: data.slug, id: { not: id } } });
@@ -110,6 +156,73 @@ export class TaxonomyService {
 
   async deleteNeedTag(id: string) {
     await this.findOneNeedTag(id);
+    const usage = await this.prisma.needReportTag.count({ where: { needTagId: id } });
+    if (usage > 0) {
+      return this.prisma.needTag.update({
+        where: { id },
+        data: { status: EntityStatus.INACTIVE },
+      });
+    }
     await this.prisma.needTag.delete({ where: { id } });
+  }
+
+  // ---- Target Groups ----
+
+  async findManyTargetGroups(query: PaginationQuery & { search?: string; status?: EntityStatus }) {
+    const { page = 1, perPage = 10, sortBy = 'name', sortOrder = 'asc', search, status } = query;
+    const where = search
+      ? {
+          ...(status ? { status } : {}),
+          name: { contains: search, mode: 'insensitive' as const },
+        }
+      : { ...(status ? { status } : {}) };
+
+    const [data, total] = await Promise.all([
+      this.prisma.targetGroup.findMany({
+        where,
+        orderBy: { [sortBy]: sortOrder },
+        skip: (page - 1) * perPage,
+        take: perPage,
+        include: { _count: { select: { services: true } } },
+      }),
+      this.prisma.targetGroup.count({ where }),
+    ]);
+
+    return paginatedResult(data, total, page, perPage);
+  }
+
+  async findOneTargetGroup(id: string) {
+    const targetGroup = await this.prisma.targetGroup.findUnique({
+      where: { id },
+      include: { _count: { select: { services: true } } },
+    });
+    if (!targetGroup) throw this.exceptions.notFound('TargetGroup', id);
+    return targetGroup;
+  }
+
+  async createTargetGroup(data: { name: string; status?: EntityStatus }) {
+    return this.prisma.targetGroup.create({
+      data: {
+        ...data,
+        status: data.status ?? EntityStatus.ACTIVE,
+      },
+    });
+  }
+
+  async updateTargetGroup(id: string, data: { name?: string; status?: EntityStatus }) {
+    await this.findOneTargetGroup(id);
+    return this.prisma.targetGroup.update({ where: { id }, data });
+  }
+
+  async deleteTargetGroup(id: string) {
+    await this.findOneTargetGroup(id);
+    const usage = await this.prisma.serviceTargetGroup.count({ where: { targetGroupId: id } });
+    if (usage > 0) {
+      return this.prisma.targetGroup.update({
+        where: { id },
+        data: { status: EntityStatus.INACTIVE },
+      });
+    }
+    await this.prisma.targetGroup.delete({ where: { id } });
   }
 }

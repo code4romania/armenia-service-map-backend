@@ -1,6 +1,7 @@
-import { IsOptional, IsUUID, IsBoolean } from 'class-validator';
+import { IsOptional, IsUUID, IsBoolean, IsEnum } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto.js';
+import { ServiceStatus } from '../../../common/enums/service-status.enum.js';
 
 export class ServiceQueryDto extends PaginationQueryDto {
   @IsOptional()
@@ -19,4 +20,8 @@ export class ServiceQueryDto extends PaginationQueryDto {
   @Transform(({ value }) => value === 'true')
   @IsBoolean()
   isAvailable?: boolean;
+
+  @IsOptional()
+  @IsEnum(ServiceStatus)
+  status?: ServiceStatus;
 }

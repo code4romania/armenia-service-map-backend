@@ -3,11 +3,13 @@ import { PrismaService } from '../../infrastructure/prisma/prisma.service.js';
 import { DomainExceptionService } from '../../infrastructure/exceptions/domain-exception.service.js';
 import { PaginationQuery } from '../../common/interfaces/pagination.interface.js';
 import { paginatedResult } from '../../infrastructure/base/base-crud.service.js';
+import { ServiceStatus } from '../../common/enums/service-status.enum.js';
 
 const serviceInclude = {
   organisation: { select: { id: true, name: true } },
   region: { select: { id: true, name: true } },
   topics: { include: { topic: { select: { id: true, name: true, slug: true } } } },
+  targetGroups: { include: { targetGroup: { select: { id: true, name: true, status: true } } } },
 } as const;
 
 @Injectable()
@@ -23,13 +25,15 @@ export class ServicesService {
     regionId?: string;
     topicId?: string;
     isAvailable?: boolean;
+    status?: ServiceStatus;
   }) {
-    const { page = 1, perPage = 10, sortBy = 'title', sortOrder = 'asc', search, organisationId, regionId, topicId, isAvailable } = query;
+    const { page = 1, perPage = 10, sortBy = 'title', sortOrder = 'asc', search, organisationId, regionId, topicId, isAvailable, status } = query;
     const where = {
       deletedAt: null,
       ...(organisationId ? { organisationId } : {}),
       ...(regionId ? { regionId } : {}),
       ...(isAvailable !== undefined ? { isAvailable } : {}),
+      ...(status ? { status } : {}),
       ...(topicId ? { topics: { some: { topicId } } } : {}),
       ...(search
         ? {
@@ -71,17 +75,21 @@ export class ServicesService {
     organisationId: string;
     regionId?: string;
     isAvailable?: boolean;
+    status?: ServiceStatus;
     availabilityStart?: Date;
     availabilityEnd?: Date;
-    targetGroup?: string[];
+    targetGroupIds?: string[];
     topicIds?: string[];
   }) {
-    const { topicIds, ...serviceData } = data;
+    const { topicIds, targetGroupIds, ...serviceData } = data;
     return this.prisma.service.create({
       data: {
         ...serviceData,
         ...(topicIds?.length
           ? { topics: { create: topicIds.map((topicId) => ({ topicId })) } }
+          : {}),
+        ...(targetGroupIds?.length
+          ? { targetGroups: { create: targetGroupIds.map((targetGroupId) => ({ targetGroupId })) } }
           : {}),
       },
       include: serviceInclude,
@@ -94,16 +102,20 @@ export class ServicesService {
     description?: string;
     regionId?: string;
     isAvailable?: boolean;
+    status?: ServiceStatus;
     availabilityStart?: Date | null;
     availabilityEnd?: Date | null;
-    targetGroup?: string[];
+    targetGroupIds?: string[];
     topicIds?: string[];
   }) {
     await this.findOne(id);
-    const { topicIds, ...serviceData } = data;
+    const { topicIds, targetGroupIds, ...serviceData } = data;
 
     if (topicIds !== undefined) {
       await this.prisma.serviceTopic.deleteMany({ where: { serviceId: id } });
+    }
+    if (targetGroupIds !== undefined) {
+      await this.prisma.serviceTargetGroup.deleteMany({ where: { serviceId: id } });
     }
 
     return this.prisma.service.update({
@@ -112,6 +124,9 @@ export class ServicesService {
         ...serviceData,
         ...(topicIds !== undefined
           ? { topics: { create: topicIds.map((topicId) => ({ topicId })) } }
+          : {}),
+        ...(targetGroupIds !== undefined
+          ? { targetGroups: { create: targetGroupIds.map((targetGroupId) => ({ targetGroupId })) } }
           : {}),
       },
       include: serviceInclude,
@@ -132,5 +147,23 @@ export class ServicesService {
       throw this.exceptions.forbidden('Service', 'You can only manage your own organisation\'s services');
     }
     return service;
+  }
+
+  async publish(id: string) {
+    await this.findOne(id);
+    return this.prisma.service.update({
+      where: { id },
+      data: { status: ServiceStatus.PUBLISHED },
+      include: serviceInclude,
+    });
+  }
+
+  async unpublish(id: string) {
+    await this.findOne(id);
+    return this.prisma.service.update({
+      where: { id },
+      data: { status: ServiceStatus.DRAFT },
+      include: serviceInclude,
+    });
   }
 }

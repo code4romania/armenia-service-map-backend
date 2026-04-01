@@ -1,10 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service.js';
 import { DomainExceptionService } from '../../infrastructure/exceptions/domain-exception.service.js';
 import { PaginationQuery } from '../../common/interfaces/pagination.interface.js';
 import { paginatedResult } from '../../infrastructure/base/base-crud.service.js';
 import { Role } from '../../common/enums/role.enum.js';
+import { UserStatus } from '../../common/enums/user-status.enum.js';
+import { EmailService } from '../email/email.service.js';
 
 // Fields to never return to API
 const userSelect = {
@@ -12,6 +16,9 @@ const userSelect = {
   email: true,
   firstName: true,
   lastName: true,
+  phone: true,
+  status: true,
+  lastAccessAt: true,
   role: true,
   organisationId: true,
   avatarUrl: true,
@@ -25,13 +32,17 @@ export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly exceptions: DomainExceptionService,
+    private readonly emailService: EmailService,
+    private readonly jwt: JwtService,
+    private readonly config: ConfigService,
   ) {}
 
-  async findMany(query: PaginationQuery & { search?: string; organisationId?: string }) {
-    const { page = 1, perPage = 10, sortBy = 'firstName', sortOrder = 'asc', search, organisationId } = query;
+  async findMany(query: PaginationQuery & { search?: string; organisationId?: string; status?: UserStatus }) {
+    const { page = 1, perPage = 10, sortBy = 'firstName', sortOrder = 'asc', search, organisationId, status } = query;
     const where = {
       deletedAt: null,
       ...(organisationId ? { organisationId } : {}),
+      ...(status ? { status } : {}),
       ...(search
         ? {
             OR: [
@@ -70,6 +81,8 @@ export class UsersService {
     email: string;
     firstName: string;
     lastName: string;
+    phone?: string;
+    status?: UserStatus;
     role: Role;
     organisationId?: string;
     password?: string;
@@ -92,6 +105,8 @@ export class UsersService {
   async update(id: string, data: {
     firstName?: string;
     lastName?: string;
+    phone?: string;
+    status?: UserStatus;
     role?: Role;
     organisationId?: string;
   }) {
@@ -112,14 +127,50 @@ export class UsersService {
   }
 
   async resetPassword(id: string) {
-    await this.findOne(id);
-    const newPassword = Math.random().toString(36).slice(-12);
-    const passwordHash = await bcrypt.hash(newPassword, 10);
+    const user = await this.findOne(id);
+    const token = await this.jwt.signAsync(
+      { sub: id, type: 'setup-password' },
+      {
+        secret: this.config.getOrThrow('JWT_ACCESS_SECRET'),
+        expiresIn: '2h',
+      },
+    );
+    const resetUrl = `${this.config.get('CORS_ORIGIN', 'http://localhost:3001')}/setup-password?token=${token}`;
+
     await this.prisma.user.update({
       where: { id },
-      data: { passwordHash, refreshToken: null },
+      data: { refreshToken: null },
     });
-    // TODO: Send email with new password in Phase 5
-    return { temporaryPassword: newPassword };
+
+    await this.emailService.sendResetPassword({
+      to: user.email,
+      recipientName: `${user.firstName} ${user.lastName}`,
+      resetUrl,
+    });
+
+    return { message: 'Password reset email sent' };
+  }
+
+  async deactivate(id: string) {
+    await this.findOne(id);
+    return this.prisma.user.update({
+      where: { id },
+      data: {
+        status: UserStatus.SUSPENDED,
+        refreshToken: null,
+      },
+      select: userSelect,
+    });
+  }
+
+  async activate(id: string) {
+    await this.findOne(id);
+    return this.prisma.user.update({
+      where: { id },
+      data: {
+        status: UserStatus.ACTIVE,
+      },
+      select: userSelect,
+    });
   }
 }

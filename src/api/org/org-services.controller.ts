@@ -8,6 +8,8 @@ import { GetManyServicesUseCase } from '../../usecases/services/get-many-service
 import { GetOneServiceUseCase } from '../../usecases/services/get-one-service.usecase.js';
 import { CreateServiceUseCase } from '../../usecases/services/create-service.usecase.js';
 import { UpdateServiceUseCase } from '../../usecases/services/update-service.usecase.js';
+import { PublishServiceUseCase } from '../../usecases/services/publish-service.usecase.js';
+import { UnpublishServiceUseCase } from '../../usecases/services/unpublish-service.usecase.js';
 import { ServicesService } from '../../modules/services/services.service.js';
 import { DomainExceptionService } from '../../infrastructure/exceptions/domain-exception.service.js';
 import type { AuthenticatedRequest } from '../../common/interfaces/authenticated-request.interface.js';
@@ -20,6 +22,8 @@ export class OrgServicesController {
     private readonly getOneService: GetOneServiceUseCase,
     private readonly createService: CreateServiceUseCase,
     private readonly updateService: UpdateServiceUseCase,
+    private readonly publishService: PublishServiceUseCase,
+    private readonly unpublishService: UnpublishServiceUseCase,
     private readonly servicesService: ServicesService,
     private readonly exceptions: DomainExceptionService,
   ) {}
@@ -59,5 +63,17 @@ export class OrgServicesController {
       availabilityStart: dto.availabilityStart ? new Date(dto.availabilityStart) : undefined,
       availabilityEnd: dto.availabilityEnd ? new Date(dto.availabilityEnd) : undefined,
     });
+  }
+
+  @Post(':id/publish')
+  async publish(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    await this.servicesService.verifyOwnership(id, this.getOrgId(req));
+    return this.publishService.execute(id);
+  }
+
+  @Post(':id/unpublish')
+  async unpublish(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    await this.servicesService.verifyOwnership(id, this.getOrgId(req));
+    return this.unpublishService.execute(id);
   }
 }

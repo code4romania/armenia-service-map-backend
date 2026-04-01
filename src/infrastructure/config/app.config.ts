@@ -41,6 +41,24 @@ export class AppConfig {
 
   @IsString()
   S3_REGION: string = 'us-east-1';
+
+  @IsNumber()
+  @Type(() => Number)
+  UPLOAD_MAX_IMAGE_BYTES: number = 5 * 1024 * 1024;
+
+  @IsNumber()
+  @Type(() => Number)
+  UPLOAD_MAX_DOCUMENT_BYTES: number = 10 * 1024 * 1024;
+
+  @IsString()
+  MAIL_HOST: string = 'localhost';
+
+  @IsNumber()
+  @Type(() => Number)
+  MAIL_PORT: number = 1025;
+
+  @IsString()
+  MAIL_FROM: string;
 }
 
 export function validate(config: Record<string, unknown>) {

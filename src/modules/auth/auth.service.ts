@@ -1,10 +1,11 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service.js';
 import { JwtPayload } from '../../common/interfaces/authenticated-request.interface.js';
 import { Role } from '../../common/enums/role.enum.js';
+import { UserStatus } from '../../common/enums/user-status.enum.js';
 
 @Injectable()
 export class AuthService {
@@ -22,6 +23,7 @@ export class AuthService {
     if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
       throw new UnauthorizedException('Invalid email or password');
     }
+    this.assertUserIsActive(user.status as UserStatus);
 
     const tokens = await this.generateTokens({
       sub: user.id,
@@ -30,7 +32,13 @@ export class AuthService {
       organisationId: user.organisationId ?? undefined,
     });
 
-    await this.updateRefreshToken(user.id, tokens.refreshToken);
+    await Promise.all([
+      this.updateRefreshToken(user.id, tokens.refreshToken),
+      this.prisma.user.update({
+        where: { id: user.id },
+        data: { lastAccessAt: new Date() },
+      }),
+    ]);
 
     return tokens;
   }
@@ -43,6 +51,7 @@ export class AuthService {
     if (!user || !user.refreshToken) {
       throw new UnauthorizedException('Access denied');
     }
+    this.assertUserIsActive(user.status as UserStatus);
 
     const refreshTokenMatches = await bcrypt.compare(refreshToken, user.refreshToken);
     if (!refreshTokenMatches) {
@@ -82,6 +91,27 @@ export class AuthService {
     return profile;
   }
 
+  async setupPassword(token: string, password: string) {
+    let payload: JwtPayload;
+    try {
+      payload = await this.jwt.verifyAsync<JwtPayload>(token, {
+        secret: this.config.getOrThrow('JWT_ACCESS_SECRET'),
+      });
+    } catch {
+      throw new BadRequestException('Invalid or expired setup token');
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    await this.prisma.user.update({
+      where: { id: payload.sub },
+      data: {
+        passwordHash,
+        status: UserStatus.ACTIVE,
+        refreshToken: null,
+      },
+    });
+  }
+
   private async generateTokens(payload: JwtPayload) {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwt.signAsync(payload, {
@@ -103,5 +133,14 @@ export class AuthService {
       where: { id: userId },
       data: { refreshToken: hashedToken },
     });
+  }
+
+  private assertUserIsActive(status: UserStatus) {
+    if (status === UserStatus.PENDING) {
+      throw new UnauthorizedException('Your account is pending activation');
+    }
+    if (status === UserStatus.SUSPENDED) {
+      throw new UnauthorizedException('Your account is suspended');
+    }
   }
 }

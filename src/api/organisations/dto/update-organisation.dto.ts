@@ -1,9 +1,14 @@
-import { IsString, IsOptional, IsEmail, IsUUID, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, IsEmail, IsUUID, IsArray, IsEnum } from 'class-validator';
+import { OrganisationStatus } from '../../../common/enums/organisation-status.enum.js';
 
 export class UpdateOrganisationDto {
   @IsOptional()
   @IsString()
   name?: string;
+
+  @IsOptional()
+  @IsString()
+  legalName?: string;
 
   @IsOptional()
   @IsString()
@@ -14,22 +19,79 @@ export class UpdateOrganisationDto {
   website?: string;
 
   @IsOptional()
+  @IsString()
+  country?: string;
+
+  @IsOptional()
+  @IsString()
+  streetAddress?: string;
+
+  @IsOptional()
+  @IsString()
+  location?: string;
+
+  @IsOptional()
+  @IsString()
+  organisationType?: string;
+
+  @IsOptional()
+  @IsString()
+  uniqueIdentifier?: string;
+
+  @IsOptional()
+  @IsString()
+  category?: string;
+
+  @IsOptional()
+  @IsString()
+  activityDomain?: string;
+
+  @IsOptional()
+  @IsString()
+  legalRepName?: string;
+
+  @IsOptional()
   @IsEmail()
-  contactEmail?: string;
+  legalRepEmail?: string;
 
   @IsOptional()
   @IsString()
-  contactPhone?: string;
+  legalRepPhone?: string;
 
   @IsOptional()
   @IsString()
-  address?: string;
+  contactPersonName?: string;
+
+  @IsOptional()
+  @IsEmail()
+  contactPersonEmail?: string;
+
+  @IsOptional()
+  @IsString()
+  contactPersonPhone?: string;
+
+  @IsOptional()
+  @IsString()
+  legalDocumentUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  logoUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  observations?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  tags?: string[];
 
   @IsOptional()
   @IsUUID()
   regionId?: string;
 
   @IsOptional()
-  @IsBoolean()
-  isActive?: boolean;
+  @IsEnum(OrganisationStatus)
+  status?: OrganisationStatus;
 }

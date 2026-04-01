@@ -1,7 +1,11 @@
-import { IsOptional, IsEnum, IsUUID, IsArray } from 'class-validator';
+import { IsOptional, IsEnum, IsUUID, IsArray, IsString } from 'class-validator';
 import { NeedStatus } from '../../../common/enums/need-status.enum.js';
 
 export class UpdateNeedDto {
+  @IsOptional()
+  @IsString()
+  title?: string;
+
   @IsOptional()
   @IsEnum(NeedStatus)
   status?: NeedStatus;

@@ -8,6 +8,6 @@ import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy.js';
 @Module({
   imports: [PassportModule, JwtModule.register({})],
   providers: [AuthService, JwtStrategy, JwtRefreshStrategy],
-  exports: [AuthService],
+  exports: [AuthService, JwtModule],
 })
 export class AuthModule {}

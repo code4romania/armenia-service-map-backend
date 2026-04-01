@@ -5,7 +5,7 @@ import { NeedStatus } from '../../common/enums/need-status.enum.js';
 @Injectable()
 export class UpdateNeedUseCase {
   constructor(private readonly needsService: NeedsService) {}
-  async execute(id: string, data: { status?: NeedStatus; assignedOrganisationId?: string | null; tagIds?: string[] }) {
-    return this.needsService.update(id, data);
+  async execute(id: string, data: { title?: string; status?: NeedStatus; assignedOrganisationId?: string | null; tagIds?: string[] }, actorUserId?: string) {
+    return this.needsService.update(id, data, actorUserId);
   }
 }

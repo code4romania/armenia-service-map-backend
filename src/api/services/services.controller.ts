@@ -9,6 +9,8 @@ import { GetOneServiceUseCase } from '../../usecases/services/get-one-service.us
 import { CreateServiceUseCase } from '../../usecases/services/create-service.usecase.js';
 import { UpdateServiceUseCase } from '../../usecases/services/update-service.usecase.js';
 import { DeleteServiceUseCase } from '../../usecases/services/delete-service.usecase.js';
+import { PublishServiceUseCase } from '../../usecases/services/publish-service.usecase.js';
+import { UnpublishServiceUseCase } from '../../usecases/services/unpublish-service.usecase.js';
 
 @Controller('admin/services')
 @Roles(Role.SUPER_ADMIN)
@@ -19,6 +21,8 @@ export class ServicesController {
     private readonly createService: CreateServiceUseCase,
     private readonly updateService: UpdateServiceUseCase,
     private readonly deleteService: DeleteServiceUseCase,
+    private readonly publishService: PublishServiceUseCase,
+    private readonly unpublishService: UnpublishServiceUseCase,
   ) {}
 
   @Get()
@@ -52,5 +56,15 @@ export class ServicesController {
   @Delete(':id')
   async remove(@Param('id') id: string) {
     return this.deleteService.execute(id);
+  }
+
+  @Post(':id/publish')
+  async publish(@Param('id') id: string) {
+    return this.publishService.execute(id);
+  }
+
+  @Post(':id/unpublish')
+  async unpublish(@Param('id') id: string) {
+    return this.unpublishService.execute(id);
   }
 }

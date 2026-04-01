@@ -4,6 +4,10 @@ import { DomainExceptionService } from '../../infrastructure/exceptions/domain-e
 import { PaginationQuery } from '../../common/interfaces/pagination.interface.js';
 import { paginatedResult } from '../../infrastructure/base/base-crud.service.js';
 import { NeedStatus } from '../../common/enums/need-status.enum.js';
+import { NeedReportEventType } from '../../common/enums/need-report-event-type.enum.js';
+import { NotificationType } from '../../common/enums/notification-type.enum.js';
+import { NotificationsService } from '../notifications/notifications.service.js';
+import { Prisma } from '../../generated/prisma/client.js';
 
 const needInclude = {
   region: { select: { id: true, name: true } },
@@ -16,6 +20,7 @@ export class NeedsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly exceptions: DomainExceptionService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async findMany(query: PaginationQuery & {
@@ -65,6 +70,7 @@ export class NeedsService {
   }
 
   async create(data: {
+    title?: string;
     description: string;
     fullName: string;
     contactMethod: string;
@@ -75,6 +81,7 @@ export class NeedsService {
     const { tagIds, ...needData } = data;
     return this.prisma.needReport.create({
       data: {
+        title: needData.title ?? '',
         ...needData,
         ...(tagIds?.length
           ? { tags: { create: tagIds.map((needTagId) => ({ needTagId })) } }
@@ -85,39 +92,120 @@ export class NeedsService {
   }
 
   async update(id: string, data: {
+    title?: string;
     status?: NeedStatus;
     assignedOrganisationId?: string | null;
     tagIds?: string[];
-  }) {
-    await this.findOne(id);
+  }, actorUserId?: string) {
+    const existingNeed = await this.findOne(id);
     const { tagIds, ...needData } = data;
-
-    if (tagIds !== undefined) {
-      await this.prisma.needReportTag.deleteMany({ where: { needReportId: id } });
+    const effectiveActorId = actorUserId ?? (await this.resolveSystemUserId());
+    if (!effectiveActorId) {
+      throw this.exceptions.badRequest('No available user to attribute need event');
     }
 
-    return this.prisma.needReport.update({
-      where: { id },
-      data: {
-        ...needData,
-        ...(tagIds !== undefined
-          ? { tags: { create: tagIds.map((needTagId) => ({ needTagId })) } }
-          : {}),
-      },
-      include: needInclude,
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const previousTagIds = existingNeed.tags.map((tag) => tag.needTag.id);
+
+      if (tagIds !== undefined) {
+        await tx.needReportTag.deleteMany({ where: { needReportId: id } });
+      }
+
+      const result = await tx.needReport.update({
+        where: { id },
+        data: {
+          ...needData,
+          ...(tagIds !== undefined
+            ? { tags: { create: tagIds.map((needTagId) => ({ needTagId })) } }
+            : {}),
+        },
+        include: needInclude,
+      });
+
+      const events: Array<{ eventType: NeedReportEventType; content?: string; metadata?: Record<string, unknown> }> = [];
+
+      if (data.status && data.status !== existingNeed.status) {
+        events.push({
+          eventType: NeedReportEventType.STATUS_CHANGE,
+          content: `Status changed from ${existingNeed.status} to ${data.status}`,
+          metadata: { from: existingNeed.status, to: data.status },
+        });
+      }
+
+      if (data.title !== undefined && data.title !== existingNeed.title) {
+        events.push({
+          eventType: NeedReportEventType.TITLE_EDITED,
+          content: 'Need title was updated',
+          metadata: { from: existingNeed.title, to: data.title },
+        });
+      }
+
+      if (tagIds !== undefined) {
+        const added = tagIds.filter((tagId) => !previousTagIds.includes(tagId));
+        const removed = previousTagIds.filter((tagId) => !tagIds.includes(tagId));
+        added.forEach((tagId) => {
+          events.push({
+            eventType: NeedReportEventType.TAG_ADDED,
+            content: 'Need tag added',
+            metadata: { tagId },
+          });
+        });
+        removed.forEach((tagId) => {
+          events.push({
+            eventType: NeedReportEventType.TAG_REMOVED,
+            content: 'Need tag removed',
+            metadata: { tagId },
+          });
+        });
+      }
+
+      if (
+        data.assignedOrganisationId !== undefined &&
+        data.assignedOrganisationId !== existingNeed.assignedOrganisationId
+      ) {
+        events.push({
+          eventType: NeedReportEventType.ASSIGNED,
+          content: 'Need assignment updated',
+          metadata: {
+            from: existingNeed.assignedOrganisationId,
+            to: data.assignedOrganisationId,
+          },
+        });
+      }
+
+      if (events.length) {
+        await tx.needReportEvent.createMany({
+          data: events.map((event) => ({
+            needReportId: id,
+            userId: effectiveActorId,
+            eventType: event.eventType,
+            content: event.content,
+            metadata: (event.metadata as Prisma.InputJsonValue | undefined) ?? undefined,
+          })),
+        });
+      }
+
+      return result;
     });
+
+    await this.notifyNeedWatchers(id, effectiveActorId, NotificationType.NEED_STATUS_CHANGED, 'Need report updated');
+    return updated;
   }
 
-  async assign(id: string, organisationId: string) {
-    await this.findOne(id);
-    return this.prisma.needReport.update({
-      where: { id },
-      data: {
+  async assign(id: string, organisationId: string, actorUserId?: string) {
+    const updated = await this.update(
+      id,
+      {
         assignedOrganisationId: organisationId,
-        status: NeedStatus.ASSIGNED,
+        status: NeedStatus.IN_PROGRESS,
       },
-      include: needInclude,
-    });
+      actorUserId,
+    );
+    const effectiveActorId = actorUserId ?? (await this.resolveSystemUserId());
+    if (effectiveActorId) {
+      await this.notifyNeedWatchers(id, effectiveActorId, NotificationType.NEED_ASSIGNED, 'Need report assigned');
+    }
+    return updated;
   }
 
   async delete(id: string) {
@@ -154,5 +242,77 @@ export class NeedsService {
       throw this.exceptions.forbidden('NeedReport', 'This need report is not assigned to your organisation');
     }
     return need;
+  }
+
+  async addComment(needId: string, userId: string, content: string) {
+    await this.findOne(needId);
+
+    await this.prisma.needReportEvent.create({
+      data: {
+        needReportId: needId,
+        userId,
+        eventType: NeedReportEventType.COMMENT,
+        content,
+      },
+    });
+
+    await this.notifyNeedWatchers(needId, userId, NotificationType.NEED_COMMENT_ADDED, 'New comment on need report');
+  }
+
+  async getEvents(needId: string) {
+    await this.findOne(needId);
+    return this.prisma.needReportEvent.findMany({
+      where: { needReportId: needId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: {
+          select: { id: true, firstName: true, lastName: true, email: true },
+        },
+      },
+    });
+  }
+
+  private async resolveSystemUserId() {
+    const user = await this.prisma.user.findFirst({
+      where: { deletedAt: null },
+      select: { id: true },
+    });
+    return user?.id;
+  }
+
+  private async notifyNeedWatchers(
+    needId: string,
+    actorUserId: string,
+    type: NotificationType,
+    title: string,
+  ) {
+    const need = await this.prisma.needReport.findUnique({
+      where: { id: needId },
+      select: { id: true, title: true, assignedOrganisationId: true },
+    });
+    if (!need) return;
+
+    const users = await this.prisma.user.findMany({
+      where: {
+        deletedAt: null,
+        id: { not: actorUserId },
+        OR: [
+          { role: 'SUPER_ADMIN' },
+          ...(need.assignedOrganisationId ? [{ organisationId: need.assignedOrganisationId }] : []),
+        ],
+      },
+      select: { id: true },
+    });
+    if (!users.length) return;
+
+    await this.notifications.createMany(
+      users.map((user) => user.id),
+      {
+        type,
+        title,
+        message: need.title || `Need report ${need.id} updated`,
+        metadata: { needReportId: need.id },
+      },
+    );
   }
 }

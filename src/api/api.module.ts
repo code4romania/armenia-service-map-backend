@@ -10,6 +10,8 @@ import { NeedsController } from './needs/needs.controller.js';
 import { OrgNeedsController } from './org/org-needs.controller.js';
 import { AnalyticsController } from './analytics/analytics.controller.js';
 import { OrgAnalyticsController } from './org/org-analytics.controller.js';
+import { UploadController } from './upload/upload.controller.js';
+import { NotificationsController } from './notifications/notifications.controller.js';
 import { AuthModule } from '../modules/auth/auth.module.js';
 import { UseCaseModule } from '../usecases/use-case.module.js';
 import { ServicesModule } from '../modules/services/services.module.js';
@@ -17,6 +19,6 @@ import { NeedsModule } from '../modules/needs/needs.module.js';
 
 @Module({
   imports: [AuthModule, UseCaseModule, ServicesModule, NeedsModule],
-  controllers: [AuthController, PublicController, TaxonomyController, OrganisationsController, UsersController, ServicesController, OrgServicesController, NeedsController, OrgNeedsController, AnalyticsController, OrgAnalyticsController],
+  controllers: [AuthController, PublicController, TaxonomyController, OrganisationsController, UsersController, ServicesController, OrgServicesController, NeedsController, OrgNeedsController, AnalyticsController, OrgAnalyticsController, UploadController, NotificationsController],
 })
 export class ApiModule {}
