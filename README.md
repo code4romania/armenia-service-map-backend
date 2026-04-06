@@ -38,6 +38,7 @@ Required env variables include:
 - `UPLOAD_MAX_IMAGE_BYTES`, `UPLOAD_MAX_DOCUMENT_BYTES`
 - `MAIL_HOST`, `MAIL_PORT`, `MAIL_FROM`
 - `PORT`, `CORS_ORIGIN`
+- Optional: `AUTO_DB_INIT=true` to auto-run `prisma migrate deploy`, then seed only if `users` is empty
 
 ## Database Workflow (Development)
 
@@ -47,6 +48,22 @@ Apply the current migration set and seed data:
 npx prisma migrate reset --force
 npx prisma db seed
 ```
+
+## Cloud Auto Initialization (Optional)
+
+If your cloud runtime cannot run manual Prisma commands, set:
+
+```bash
+AUTO_DB_INIT=true
+```
+
+At startup, the backend will:
+
+1. Run `prisma migrate deploy`
+2. Check `users` table row count
+3. Run `prisma db seed` only when count is `0`
+
+This prevents reseeding on normal restarts once users already exist.
 
 Check migration status:
 

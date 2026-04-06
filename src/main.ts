@@ -3,8 +3,10 @@ import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module.js';
 import { GlobalExceptionFilter } from './infrastructure/filters/global-exception.filter.js';
+import { runDatabaseInitFromEnv } from './infrastructure/bootstrap/database-init.js';
 
 async function bootstrap() {
+  await runDatabaseInitFromEnv();
   const app = await NestFactory.create(AppModule);
   const config = app.get(ConfigService);
 
