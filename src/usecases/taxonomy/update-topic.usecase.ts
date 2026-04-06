@@ -6,7 +6,16 @@ import { EntityStatus } from '../../common/enums/entity-status.enum.js';
 export class UpdateTopicUseCase {
   constructor(private readonly taxonomyService: TaxonomyService) {}
 
-  async execute(id: string, data: { name?: string; slug?: string; icon?: string; parentId?: string | null; status?: EntityStatus; sortOrder?: number }) {
+  async execute(id: string, data: {
+    name?: string;
+    slug?: string;
+    icon?: string;
+    parentId?: string | null;
+    status?: EntityStatus;
+    sortOrder?: number;
+    subtopics?: Array<{ id?: string; name: string; status: EntityStatus; sortOrder: number }>;
+    removedSubtopicIds?: string[];
+  }) {
     return this.taxonomyService.updateTopic(id, data);
   }
 }

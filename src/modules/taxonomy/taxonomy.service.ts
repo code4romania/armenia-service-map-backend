@@ -12,16 +12,79 @@ export class TaxonomyService {
     private readonly exceptions: DomainExceptionService,
   ) {}
 
+  private slugifyTopicName(name: string) {
+    return name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-');
+  }
+
+  private async ensureUniqueTopicSlug(client: Pick<PrismaService, 'topic'>, baseInput: string) {
+    const baseSlug = this.slugifyTopicName(baseInput) || 'topic';
+    let candidate = baseSlug;
+    let suffix = 2;
+
+    while (await client.topic.findUnique({ where: { slug: candidate } })) {
+      candidate = `${baseSlug}-${suffix}`;
+      suffix += 1;
+    }
+
+    return candidate;
+  }
+
+  private async ensureUniqueNeedTagSlug(baseInput: string, excludeId?: string) {
+    const baseSlug = this.slugifyTopicName(baseInput) || 'need-tag';
+    let candidate = baseSlug;
+    let suffix = 2;
+
+    while (
+      await this.prisma.needTag.findFirst({
+        where: {
+          slug: candidate,
+          ...(excludeId ? { id: { not: excludeId } } : {}),
+        },
+      })
+    ) {
+      candidate = `${baseSlug}-${suffix}`;
+      suffix += 1;
+    }
+
+    return candidate;
+  }
+
+  private async findOneTopicWithClient(
+    client: Pick<PrismaService, 'topic'>,
+    id: string,
+  ) {
+    const topic = await client.topic.findUnique({
+      where: { id },
+      include: {
+        parent: { select: { id: true, name: true } },
+        children: {
+          orderBy: { sortOrder: 'asc' },
+          include: { _count: { select: { services: true } } },
+        },
+        _count: { select: { services: true } },
+      },
+    });
+
+    if (!topic) throw this.exceptions.notFound('Topic', id);
+    return topic;
+  }
+
   // ---- Topics ----
 
   async findManyTopics(query: PaginationQuery & { search?: string; status?: EntityStatus }) {
     const { page = 1, perPage = 10, sortBy = 'sortOrder', sortOrder = 'asc', search, status } = query;
     const where = search
       ? {
+          parentId: null,
           ...(status ? { status } : {}),
           name: { contains: search, mode: 'insensitive' as const },
         }
-      : { ...(status ? { status } : {}) };
+      : { parentId: null, ...(status ? { status } : {}) };
 
     const [data, total] = await Promise.all([
       this.prisma.topic.findMany({
@@ -42,36 +105,101 @@ export class TaxonomyService {
   }
 
   async findOneTopic(id: string) {
-    const topic = await this.prisma.topic.findUnique({
-      where: { id },
-      include: {
-        parent: { select: { id: true, name: true } },
-        children: { select: { id: true, name: true, status: true } },
-        _count: { select: { services: true } },
-      },
-    });
-    if (!topic) throw this.exceptions.notFound('Topic', id);
-    return topic;
+    return this.findOneTopicWithClient(this.prisma, id);
   }
 
-  async createTopic(data: { name: string; slug: string; icon?: string; parentId?: string; status?: EntityStatus; sortOrder?: number }) {
-    const existing = await this.prisma.topic.findUnique({ where: { slug: data.slug } });
-    if (existing) throw this.exceptions.conflict('Topic', `Slug "${data.slug}" already exists`);
-    return this.prisma.topic.create({
-      data: {
-        ...data,
-        status: data.status ?? EntityStatus.ACTIVE,
-      },
+  async createTopic(data: {
+    name: string;
+    slug?: string;
+    icon?: string;
+    parentId?: string;
+    status?: EntityStatus;
+    sortOrder?: number;
+    subtopics?: Array<{ id?: string; name: string; status: EntityStatus; sortOrder: number }>;
+  }) {
+    const { subtopics, ...topicData } = data;
+
+    return this.prisma.$transaction(async (tx) => {
+      const slug = data.slug?.trim() ? await this.ensureUniqueTopicSlug(tx, data.slug) : await this.ensureUniqueTopicSlug(tx, data.name);
+      const topic = await tx.topic.create({
+        data: {
+          ...topicData,
+          slug,
+          status: data.status ?? EntityStatus.ACTIVE,
+        },
+      });
+
+      for (const subtopic of subtopics ?? []) {
+        await tx.topic.create({
+          data: {
+            name: subtopic.name,
+            slug: await this.ensureUniqueTopicSlug(tx, subtopic.name),
+            status: subtopic.status,
+            sortOrder: subtopic.sortOrder,
+            parentId: topic.id,
+          },
+        });
+      }
+
+      return this.findOneTopicWithClient(tx, topic.id);
     });
   }
 
-  async updateTopic(id: string, data: { name?: string; slug?: string; icon?: string; parentId?: string | null; status?: EntityStatus; sortOrder?: number }) {
+  async updateTopic(id: string, data: {
+    name?: string;
+    slug?: string;
+    icon?: string;
+    parentId?: string | null;
+    status?: EntityStatus;
+    sortOrder?: number;
+    subtopics?: Array<{ id?: string; name: string; status: EntityStatus; sortOrder: number }>;
+    removedSubtopicIds?: string[];
+  }) {
     await this.findOneTopic(id);
     if (data.slug) {
       const existing = await this.prisma.topic.findFirst({ where: { slug: data.slug, id: { not: id } } });
       if (existing) throw this.exceptions.conflict('Topic', `Slug "${data.slug}" already exists`);
     }
-    return this.prisma.topic.update({ where: { id }, data });
+    const { subtopics, removedSubtopicIds, ...topicData } = data;
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.topic.update({ where: { id }, data: topicData });
+
+      if (removedSubtopicIds?.length) {
+        await tx.topic.deleteMany({
+          where: {
+            id: { in: removedSubtopicIds },
+            parentId: id,
+          },
+        });
+      }
+
+      for (const subtopic of subtopics ?? []) {
+        if (subtopic.id) {
+          await tx.topic.update({
+            where: { id: subtopic.id },
+            data: {
+              name: subtopic.name,
+              status: subtopic.status,
+              sortOrder: subtopic.sortOrder,
+            },
+          });
+          continue;
+        }
+
+        await tx.topic.create({
+          data: {
+            name: subtopic.name,
+            slug: await this.ensureUniqueTopicSlug(tx, subtopic.name),
+            status: subtopic.status,
+            sortOrder: subtopic.sortOrder,
+            parentId: id,
+          },
+        });
+      }
+
+      return this.findOneTopicWithClient(tx, id);
+    });
   }
 
   async deleteTopic(id: string) {
@@ -134,12 +262,12 @@ export class TaxonomyService {
     return tag;
   }
 
-  async createNeedTag(data: { name: string; slug: string; status?: EntityStatus }) {
-    const existing = await this.prisma.needTag.findUnique({ where: { slug: data.slug } });
-    if (existing) throw this.exceptions.conflict('NeedTag', `Slug "${data.slug}" already exists`);
+  async createNeedTag(data: { name: string; slug?: string; status?: EntityStatus }) {
+    const slug = data.slug?.trim() ? await this.ensureUniqueNeedTagSlug(data.slug) : await this.ensureUniqueNeedTagSlug(data.name);
     return this.prisma.needTag.create({
       data: {
         ...data,
+        slug,
         status: data.status ?? EntityStatus.ACTIVE,
       },
     });

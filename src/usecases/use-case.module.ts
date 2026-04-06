@@ -11,15 +11,18 @@ import { EmailModule } from '../modules/email/email.module.js';
 import { AuthModule } from '../modules/auth/auth.module.js';
 // Taxonomy
 import { GetManyTopicsUseCase } from './taxonomy/get-many-topics.usecase.js';
+import { GetOneTopicUseCase } from './taxonomy/get-one-topic.usecase.js';
 import { GetTopicTreeUseCase } from './taxonomy/get-topic-tree.usecase.js';
 import { CreateTopicUseCase } from './taxonomy/create-topic.usecase.js';
 import { UpdateTopicUseCase } from './taxonomy/update-topic.usecase.js';
 import { DeleteTopicUseCase } from './taxonomy/delete-topic.usecase.js';
 import { GetManyNeedTagsUseCase } from './taxonomy/get-many-need-tags.usecase.js';
+import { GetOneNeedTagUseCase } from './taxonomy/get-one-need-tag.usecase.js';
 import { CreateNeedTagUseCase } from './taxonomy/create-need-tag.usecase.js';
 import { UpdateNeedTagUseCase } from './taxonomy/update-need-tag.usecase.js';
 import { DeleteNeedTagUseCase } from './taxonomy/delete-need-tag.usecase.js';
 import { GetManyTargetGroupsUseCase } from './taxonomy/get-many-target-groups.usecase.js';
+import { GetOneTargetGroupUseCase } from './taxonomy/get-one-target-group.usecase.js';
 import { CreateTargetGroupUseCase } from './taxonomy/create-target-group.usecase.js';
 import { UpdateTargetGroupUseCase } from './taxonomy/update-target-group.usecase.js';
 import { DeleteTargetGroupUseCase } from './taxonomy/delete-target-group.usecase.js';
@@ -84,15 +87,18 @@ import { MarkAllNotificationsReadUseCase } from './notifications/mark-all-notifi
 
 const taxonomyUseCases = [
   GetManyTopicsUseCase,
+  GetOneTopicUseCase,
   GetTopicTreeUseCase,
   CreateTopicUseCase,
   UpdateTopicUseCase,
   DeleteTopicUseCase,
   GetManyNeedTagsUseCase,
+  GetOneNeedTagUseCase,
   CreateNeedTagUseCase,
   UpdateNeedTagUseCase,
   DeleteNeedTagUseCase,
   GetManyTargetGroupsUseCase,
+  GetOneTargetGroupUseCase,
   CreateTargetGroupUseCase,
   UpdateTargetGroupUseCase,
   DeleteTargetGroupUseCase,

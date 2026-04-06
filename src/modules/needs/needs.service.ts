@@ -143,18 +143,20 @@ export class NeedsService {
       if (tagIds !== undefined) {
         const added = tagIds.filter((tagId) => !previousTagIds.includes(tagId));
         const removed = previousTagIds.filter((tagId) => !tagIds.includes(tagId));
+        const previousTagMap = new Map(existingNeed.tags.map((tag) => [tag.needTag.id, tag.needTag.name]));
+        const nextTagMap = new Map(result.tags.map((tag) => [tag.needTag.id, tag.needTag.name]));
         added.forEach((tagId) => {
           events.push({
             eventType: NeedReportEventType.TAG_ADDED,
-            content: 'Need tag added',
-            metadata: { tagId },
+            content: `Tag added: ${nextTagMap.get(tagId) ?? tagId}`,
+            metadata: { tagId, tagName: nextTagMap.get(tagId) ?? null },
           });
         });
         removed.forEach((tagId) => {
           events.push({
             eventType: NeedReportEventType.TAG_REMOVED,
-            content: 'Need tag removed',
-            metadata: { tagId },
+            content: `Tag removed: ${previousTagMap.get(tagId) ?? tagId}`,
+            metadata: { tagId, tagName: previousTagMap.get(tagId) ?? null },
           });
         });
       }
@@ -165,10 +167,12 @@ export class NeedsService {
       ) {
         events.push({
           eventType: NeedReportEventType.ASSIGNED,
-          content: 'Need assignment updated',
+          content: `Assignee changed from ${existingNeed.assignedOrganisation?.name ?? 'Unassigned'} to ${result.assignedOrganisation?.name ?? 'Unassigned'}`,
           metadata: {
             from: existingNeed.assignedOrganisationId,
             to: data.assignedOrganisationId,
+            fromName: existingNeed.assignedOrganisation?.name ?? null,
+            toName: result.assignedOrganisation?.name ?? null,
           },
         });
       }

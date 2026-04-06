@@ -5,8 +5,9 @@ export class CreateNeedTagDto {
   @IsString()
   name: string;
 
+  @IsOptional()
   @IsString()
-  slug: string;
+  slug?: string;
 
   @IsOptional()
   @IsEnum(EntityStatus)

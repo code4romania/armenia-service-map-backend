@@ -9,15 +9,18 @@ import { UpdateNeedTagDto } from './dto/update-need-tag.dto.js';
 import { CreateTargetGroupDto } from './dto/create-target-group.dto.js';
 import { UpdateTargetGroupDto } from './dto/update-target-group.dto.js';
 import { GetManyTopicsUseCase } from '../../usecases/taxonomy/get-many-topics.usecase.js';
+import { GetOneTopicUseCase } from '../../usecases/taxonomy/get-one-topic.usecase.js';
 import { GetTopicTreeUseCase } from '../../usecases/taxonomy/get-topic-tree.usecase.js';
 import { CreateTopicUseCase } from '../../usecases/taxonomy/create-topic.usecase.js';
 import { UpdateTopicUseCase } from '../../usecases/taxonomy/update-topic.usecase.js';
 import { DeleteTopicUseCase } from '../../usecases/taxonomy/delete-topic.usecase.js';
 import { GetManyNeedTagsUseCase } from '../../usecases/taxonomy/get-many-need-tags.usecase.js';
+import { GetOneNeedTagUseCase } from '../../usecases/taxonomy/get-one-need-tag.usecase.js';
 import { CreateNeedTagUseCase } from '../../usecases/taxonomy/create-need-tag.usecase.js';
 import { UpdateNeedTagUseCase } from '../../usecases/taxonomy/update-need-tag.usecase.js';
 import { DeleteNeedTagUseCase } from '../../usecases/taxonomy/delete-need-tag.usecase.js';
 import { GetManyTargetGroupsUseCase } from '../../usecases/taxonomy/get-many-target-groups.usecase.js';
+import { GetOneTargetGroupUseCase } from '../../usecases/taxonomy/get-one-target-group.usecase.js';
 import { CreateTargetGroupUseCase } from '../../usecases/taxonomy/create-target-group.usecase.js';
 import { UpdateTargetGroupUseCase } from '../../usecases/taxonomy/update-target-group.usecase.js';
 import { DeleteTargetGroupUseCase } from '../../usecases/taxonomy/delete-target-group.usecase.js';
@@ -27,15 +30,18 @@ import { DeleteTargetGroupUseCase } from '../../usecases/taxonomy/delete-target-
 export class TaxonomyController {
   constructor(
     private readonly getManyTopics: GetManyTopicsUseCase,
+    private readonly getOneTopic: GetOneTopicUseCase,
     private readonly getTopicTree: GetTopicTreeUseCase,
     private readonly createTopic: CreateTopicUseCase,
     private readonly updateTopic: UpdateTopicUseCase,
     private readonly deleteTopic: DeleteTopicUseCase,
     private readonly getManyNeedTags: GetManyNeedTagsUseCase,
+    private readonly getOneNeedTag: GetOneNeedTagUseCase,
     private readonly createNeedTag: CreateNeedTagUseCase,
     private readonly updateNeedTag: UpdateNeedTagUseCase,
     private readonly deleteNeedTag: DeleteNeedTagUseCase,
     private readonly getManyTargetGroups: GetManyTargetGroupsUseCase,
+    private readonly getOneTargetGroup: GetOneTargetGroupUseCase,
     private readonly createTargetGroup: CreateTargetGroupUseCase,
     private readonly updateTargetGroup: UpdateTargetGroupUseCase,
     private readonly deleteTargetGroup: DeleteTargetGroupUseCase,
@@ -51,6 +57,11 @@ export class TaxonomyController {
   @Get('taxonomy/topics')
   async listTopicTree() {
     return this.getTopicTree.execute();
+  }
+
+  @Get('taxonomy/topics/:id')
+  async getTaxonomyTopic(@Param('id') id: string) {
+    return this.getOneTopic.execute(id);
   }
 
   @Post('topics')
@@ -95,6 +106,11 @@ export class TaxonomyController {
     return this.getManyNeedTags.execute(query);
   }
 
+  @Get('taxonomy/need-tags/:id')
+  async getTaxonomyNeedTag(@Param('id') id: string) {
+    return this.getOneNeedTag.execute(id);
+  }
+
   @Post('need-tags')
   async addNeedTag(@Body() dto: CreateNeedTagDto) {
     return this.createNeedTag.execute(dto);
@@ -130,6 +146,11 @@ export class TaxonomyController {
   @Get('taxonomy/target-groups')
   async listTargetGroups(@Query() query: PaginationQueryDto) {
     return this.getManyTargetGroups.execute(query);
+  }
+
+  @Get('taxonomy/target-groups/:id')
+  async getTaxonomyTargetGroup(@Param('id') id: string) {
+    return this.getOneTargetGroup.execute(id);
   }
 
   @Post('taxonomy/target-groups')

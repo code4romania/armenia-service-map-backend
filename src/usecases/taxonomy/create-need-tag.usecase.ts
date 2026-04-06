@@ -6,7 +6,7 @@ import { EntityStatus } from '../../common/enums/entity-status.enum.js';
 export class CreateNeedTagUseCase {
   constructor(private readonly taxonomyService: TaxonomyService) {}
 
-  async execute(data: { name: string; slug: string; status?: EntityStatus }) {
+  async execute(data: { name: string; slug?: string; status?: EntityStatus }) {
     return this.taxonomyService.createNeedTag(data);
   }
 }
