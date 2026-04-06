@@ -50,7 +50,7 @@ async function getUsersCountFromDb(databaseUrl: string): Promise<number> {
 }
 
 export async function runDatabaseInitFromEnv(): Promise<void> {
-  const enabled = process.env.AUTO_DB_INIT === 'true';
+  const enabled = process.env.AUTO_DB_INIT !== 'false';
   if (!enabled) return;
 
   const databaseUrl = process.env.DATABASE_URL;

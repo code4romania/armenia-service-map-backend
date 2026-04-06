@@ -38,7 +38,7 @@ Required env variables include:
 - `UPLOAD_MAX_IMAGE_BYTES`, `UPLOAD_MAX_DOCUMENT_BYTES`
 - `MAIL_HOST`, `MAIL_PORT`, `MAIL_FROM`
 - `PORT`, `CORS_ORIGIN`
-- Optional: `AUTO_DB_INIT=true` to auto-run `prisma migrate deploy`, then seed only if `users` is empty
+- `AUTO_DB_INIT` controls startup DB initialization (default enabled; set `AUTO_DB_INIT=false` to disable)
 
 ## Database Workflow (Development)
 
@@ -51,10 +51,10 @@ npx prisma db seed
 
 ## Cloud Auto Initialization (Optional)
 
-If your cloud runtime cannot run manual Prisma commands, set:
+By default, startup DB initialization is enabled. You can disable it with:
 
 ```bash
-AUTO_DB_INIT=true
+AUTO_DB_INIT=false
 ```
 
 At startup, the backend will:
