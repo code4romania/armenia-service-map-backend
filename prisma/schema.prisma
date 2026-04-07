@@ -23,6 +23,7 @@ enum UserStatus {
 enum OrganisationStatus {
   ACTIVE
   PENDING
+  REJECTED
   SUSPENDED
 }
 
@@ -58,6 +59,8 @@ enum NotificationType {
   NEED_COMMENT_ADDED
   SERVICE_PUBLISHED
   ORG_ACTIVATED
+  ORG_REVIEWED
+  ORG_PENDING_REVIEW
 }
 
 model Region {
@@ -100,6 +103,10 @@ model Organisation {
   observations       String?
   tags               String[]
   status             OrganisationStatus @default(PENDING)
+  submissionSource   String?            @map("submission_source")
+  reviewedAt         DateTime?          @map("reviewed_at")
+  reviewedByUserId   String?            @map("reviewed_by_user_id")
+  rejectionReason    String?            @map("rejection_reason")
   regionId           String?            @map("region_id")
   createdAt          DateTime           @default(now()) @map("created_at")
   updatedAt          DateTime           @updatedAt @map("updated_at")

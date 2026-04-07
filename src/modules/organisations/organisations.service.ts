@@ -76,6 +76,10 @@ export class OrganisationsService {
     observations?: string;
     tags?: string[];
     status?: OrganisationStatus;
+    submissionSource?: string;
+    reviewedAt?: Date | null;
+    reviewedByUserId?: string;
+    rejectionReason?: string | null;
     regionId?: string;
   }) {
     return this.prisma.organisation.create({
@@ -107,6 +111,10 @@ export class OrganisationsService {
     observations?: string;
     tags?: string[];
     status?: OrganisationStatus;
+    submissionSource?: string;
+    reviewedAt?: Date | null;
+    reviewedByUserId?: string | null;
+    rejectionReason?: string | null;
     regionId?: string;
   }) {
     await this.findOne(id);

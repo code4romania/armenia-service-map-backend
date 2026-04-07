@@ -34,6 +34,9 @@ import { UpdateOrganisationUseCase } from './organisations/update-organisation.u
 import { DeleteOrganisationUseCase } from './organisations/delete-organisation.usecase.js';
 import { ActivateOrganisationUseCase } from './organisations/activate-organisation.usecase.js';
 import { DeactivateOrganisationUseCase } from './organisations/deactivate-organisation.usecase.js';
+import { CreateJoinNetworkRequestUseCase } from './organisations/create-join-network-request.usecase.js';
+import { ApproveOrganisationUseCase } from './organisations/approve-organisation.usecase.js';
+import { RejectOrganisationUseCase } from './organisations/reject-organisation.usecase.js';
 // Users
 import { GetManyUsersUseCase } from './users/get-many-users.usecase.js';
 import { GetOneUserUseCase } from './users/get-one-user.usecase.js';
@@ -112,6 +115,9 @@ const organisationUseCases = [
   DeleteOrganisationUseCase,
   ActivateOrganisationUseCase,
   DeactivateOrganisationUseCase,
+  CreateJoinNetworkRequestUseCase,
+  ApproveOrganisationUseCase,
+  RejectOrganisationUseCase,
 ];
 
 const userUseCases = [

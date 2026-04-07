@@ -1,14 +1,24 @@
-import { Controller, Get, Post, Param, Query, Body, NotFoundException } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  NotFoundException,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service.js';
 import { SearchServicesUseCase } from '../../usecases/services/search-services.usecase.js';
 import { GetOneServiceUseCase } from '../../usecases/services/get-one-service.usecase.js';
 import { CreateNeedUseCase } from '../../usecases/needs/create-need.usecase.js';
 import { LogSearchUseCase } from '../../usecases/analytics/log-search.usecase.js';
+import { CreateJoinNetworkRequestUseCase } from '../../usecases/organisations/create-join-network-request.usecase.js';
 import { ServiceQueryDto } from '../services/dto/service-query.dto.js';
 import { CreateNeedDto } from '../needs/dto/create-need.dto.js';
+import { JoinNetworkDto } from './dto/join-network.dto.js';
+import { LogPublicSearchBatchDto } from './dto/log-public-search-batch.dto.js';
 import { EntityStatus } from '../../common/enums/entity-status.enum.js';
-import { ServiceStatus } from '../../common/enums/service-status.enum.js';
 
 @Controller('public')
 @Public()
@@ -19,6 +29,7 @@ export class PublicController {
     private readonly getOneService: GetOneServiceUseCase,
     private readonly createNeed: CreateNeedUseCase,
     private readonly logSearch: LogSearchUseCase,
+    private readonly createJoinNetworkRequest: CreateJoinNetworkRequestUseCase,
   ) {}
 
   @Get('regions')
@@ -47,7 +58,13 @@ export class PublicController {
         children: {
           where: { status: EntityStatus.ACTIVE },
           orderBy: { sortOrder: 'asc' },
-          select: { id: true, name: true, slug: true, status: true, sortOrder: true },
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            status: true,
+            sortOrder: true,
+          },
         },
       },
     });
@@ -64,22 +81,19 @@ export class PublicController {
 
   @Get('services')
   async listServices(@Query() query: ServiceQueryDto) {
-    const result = await this.searchServices.execute(query);
-    if (query.search) {
-      this.logSearch.execute({
-        query: query.search,
-        regionId: query.regionId,
-        topicIds: query.topicId ? [query.topicId] : [],
-        resultsCount: result.meta.total,
-      }).catch(() => {});
-    }
-    return result;
+    return this.searchServices.execute(query);
+  }
+
+  @Post('search-logs/batch')
+  async logPublicSearchBatch(@Body() dto: LogPublicSearchBatchDto) {
+    await this.logSearch.executeBatch(dto.events);
+    return { ok: true };
   }
 
   @Get('services/:id')
   async getService(@Param('id') id: string) {
     const service = await this.getOneService.execute(id);
-    if (service.status !== ServiceStatus.PUBLISHED) {
+    if (service.status !== 'PUBLISHED') {
       throw new NotFoundException('Service not found');
     }
     return service;
@@ -88,5 +102,10 @@ export class PublicController {
   @Post('needs')
   async submitNeed(@Body() dto: CreateNeedDto) {
     return this.createNeed.execute(dto);
+  }
+
+  @Post('join-network')
+  async submitJoinNetwork(@Body() dto: JoinNetworkDto) {
+    return this.createJoinNetworkRequest.execute(dto);
   }
 }

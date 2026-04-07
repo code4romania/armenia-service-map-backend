@@ -59,4 +59,41 @@ export class EmailService {
       html,
     });
   }
+
+  async sendOrganisationReviewOutcome(input: {
+    to: string;
+    recipientName: string;
+    organisationName: string;
+    outcome: 'APPROVED' | 'REJECTED';
+    rejectionReason?: string;
+  }) {
+    const isApproved = input.outcome === 'APPROVED';
+    const subject = isApproved
+      ? 'Your organisation has been approved'
+      : 'Your organisation application was not approved';
+
+    const reasonBlock =
+      !isApproved && input.rejectionReason
+        ? `<p><strong>Reason provided:</strong> ${input.rejectionReason}</p>`
+        : '';
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.5;">
+        <h2>${subject}</h2>
+        <p>Hello ${input.recipientName},</p>
+        <p>
+          Your request for <strong>${input.organisationName}</strong> to join Armenia Service Map was
+          ${isApproved ? 'approved' : 'reviewed and rejected'}.
+        </p>
+        ${reasonBlock}
+      </div>
+    `.trim();
+
+    await this.transport.sendMail({
+      from: this.fromAddress,
+      to: input.to,
+      subject,
+      html,
+    });
+  }
 }

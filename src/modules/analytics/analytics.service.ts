@@ -11,24 +11,54 @@ type TrendPoint = { month: string; count: number };
 export class AnalyticsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async logSearchBatch(
+    entries: Array<{
+      query: string;
+      regionId?: string | null;
+      topicIds?: string[];
+      resultsCount: number;
+    }>,
+  ) {
+    const normalizedEntries = entries
+      .map((entry) => this.normalizeSearchLogEntry(entry))
+      .filter((entry) => entry !== null);
+
+    if (!normalizedEntries.length) {
+      return { count: 0 };
+    }
+
+    return this.prisma.searchLog.createMany({
+      data: normalizedEntries,
+    });
+  }
+
   async logSearch(data: {
     query: string;
     regionId?: string;
     topicIds?: string[];
     resultsCount: number;
   }) {
+    const normalizedEntry = this.normalizeSearchLogEntry(data);
+    if (!normalizedEntry) {
+      return null;
+    }
+
     return this.prisma.searchLog.create({
-      data: {
-        query: data.query,
-        regionId: data.regionId || null,
-        topicIds: data.topicIds || [],
-        resultsCount: data.resultsCount,
-      },
+      data: normalizedEntry,
     });
   }
 
   async getOverview() {
-    const [totalServices, totalOrganisations, totalNeedReports, totalSearches, totalZeroResultSearches, uniqueSearchCountRow, newNeeds, resolvedNeeds] = await Promise.all([
+    const [
+      totalServices,
+      totalOrganisations,
+      totalNeedReports,
+      totalSearches,
+      totalZeroResultSearches,
+      uniqueSearchCountRow,
+      newNeeds,
+      resolvedNeeds,
+    ] = await Promise.all([
       this.prisma.service.count({ where: { deletedAt: null } }),
       this.prisma.organisation.count({ where: { deletedAt: null } }),
       this.prisma.needReport.count(),
@@ -76,14 +106,19 @@ export class AnalyticsService {
       take: safeLimit,
     });
 
-    return zeroResultQueries.map((q) => ({ query: q.query, count: q._count.id }));
+    return zeroResultQueries.map((q) => ({
+      query: q.query,
+      count: q._count.id,
+    }));
   }
 
   async getSearchFrequency(period: SearchFrequencyPeriod = 'day', limit = 30) {
     const safeLimit = this.normalizeLimit(limit, 1, 365);
     const safePeriod = period === 'week' || period === 'month' ? period : 'day';
 
-    const frequencyRows = await this.prisma.$queryRawUnsafe<{ bucket: Date; count: number }[]>(`
+    const frequencyRows = await this.prisma.$queryRawUnsafe<
+      { bucket: Date; count: number }[]
+    >(`
       SELECT bucket, count
       FROM (
         SELECT DATE_TRUNC('${safePeriod}', created_at) AS bucket, COUNT(*)::int AS count
@@ -103,7 +138,13 @@ export class AnalyticsService {
   }
 
   async getAllSearches(query: PaginationQuery & { search?: string }) {
-    const { page = 1, perPage = 20, sortBy = 'createdAt', sortOrder = 'desc', search } = query;
+    const {
+      page = 1,
+      perPage = 20,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      search,
+    } = query;
     const safeSortBy = this.normalizeSearchSortBy(sortBy);
     const safeSortOrder: SortDirection = sortOrder === 'asc' ? 'asc' : 'desc';
     const where = search
@@ -143,7 +184,9 @@ export class AnalyticsService {
         select: { id: true, name: true },
         orderBy: { name: 'asc' },
       }),
-      this.prisma.$queryRaw<{ topicId: string; regionId: string; count: bigint }[]>`
+      this.prisma.$queryRaw<
+        { topicId: string; regionId: string; count: bigint }[]
+      >`
         SELECT
           unnest(topic_ids) AS "topicId",
           region_id AS "regionId",
@@ -188,7 +231,10 @@ export class AnalyticsService {
     return {
       topQueries,
       zeroResultQueries,
-      dailyTrend: dailyTrend.map((item) => ({ date: item.bucketStart, count: item.count })),
+      dailyTrend: dailyTrend.map((item) => ({
+        date: item.bucketStart,
+        count: item.count,
+      })),
     };
   }
 
@@ -197,12 +243,21 @@ export class AnalyticsService {
   }
 
   async getOrgOverview(organisationId: string) {
-    const [totalServices, activeServices, assignedNeeds, resolvedNeeds] = await Promise.all([
-      this.prisma.service.count({ where: { organisationId, deletedAt: null } }),
-      this.prisma.service.count({ where: { organisationId, deletedAt: null, isAvailable: true } }),
-      this.prisma.needReport.count({ where: { assignedOrganisationId: organisationId } }),
-      this.prisma.needReport.count({ where: { assignedOrganisationId: organisationId, status: 'SOLVED' } }),
-    ]);
+    const [totalServices, activeServices, assignedNeeds, resolvedNeeds] =
+      await Promise.all([
+        this.prisma.service.count({
+          where: { organisationId, deletedAt: null },
+        }),
+        this.prisma.service.count({
+          where: { organisationId, deletedAt: null, isAvailable: true },
+        }),
+        this.prisma.needReport.count({
+          where: { assignedOrganisationId: organisationId },
+        }),
+        this.prisma.needReport.count({
+          where: { assignedOrganisationId: organisationId, status: 'SOLVED' },
+        }),
+      ]);
 
     return { totalServices, activeServices, assignedNeeds, resolvedNeeds };
   }
@@ -275,13 +330,37 @@ export class AnalyticsService {
     return Math.min(Math.max(Math.floor(limit), min), max);
   }
 
+  private normalizeSearchLogEntry(entry: {
+    query: string;
+    regionId?: string | null;
+    topicIds?: string[];
+    resultsCount: number;
+  }) {
+    const normalizedQuery = entry.query.trim();
+    if (!normalizedQuery) {
+      return null;
+    }
+
+    return {
+      query: normalizedQuery,
+      regionId: entry.regionId || null,
+      topicIds: entry.topicIds || [],
+      resultsCount: entry.resultsCount,
+    };
+  }
+
   private normalizeSearchSortBy(sortBy?: string) {
     const allowed = new Set(['createdAt', 'query', 'resultsCount']);
     return sortBy && allowed.has(sortBy) ? sortBy : 'createdAt';
   }
 
-  private async getMonthlyTrend(table: 'need_reports' | 'services', months: number): Promise<TrendPoint[]> {
-    const rows = await this.prisma.$queryRawUnsafe<{ month: Date; count: bigint }[]>(`
+  private async getMonthlyTrend(
+    table: 'need_reports' | 'services',
+    months: number,
+  ): Promise<TrendPoint[]> {
+    const rows = await this.prisma.$queryRawUnsafe<
+      { month: Date; count: bigint }[]
+    >(`
       SELECT
         DATE_TRUNC('month', created_at) AS month,
         COUNT(*)::int AS count
@@ -294,7 +373,10 @@ export class AnalyticsService {
     return this.normalizeMonthlyTrendRows(rows, months);
   }
 
-  private async getMonthlyNeedTrendForOrganisation(organisationId: string, months: number): Promise<TrendPoint[]> {
+  private async getMonthlyNeedTrendForOrganisation(
+    organisationId: string,
+    months: number,
+  ): Promise<TrendPoint[]> {
     const rows = await this.prisma.$queryRaw<{ month: Date; count: bigint }[]>`
       SELECT
         DATE_TRUNC('month', created_at) AS month,
@@ -308,7 +390,10 @@ export class AnalyticsService {
     return this.normalizeMonthlyTrendRows(rows, months);
   }
 
-  private async getMonthlyServiceTrendForOrganisation(organisationId: string, months: number): Promise<TrendPoint[]> {
+  private async getMonthlyServiceTrendForOrganisation(
+    organisationId: string,
+    months: number,
+  ): Promise<TrendPoint[]> {
     const rows = await this.prisma.$queryRaw<{ month: Date; count: bigint }[]>`
       SELECT
         DATE_TRUNC('month', created_at) AS month,
@@ -322,7 +407,10 @@ export class AnalyticsService {
     return this.normalizeMonthlyTrendRows(rows, months);
   }
 
-  private normalizeMonthlyTrendRows(rows: Array<{ month: Date; count: bigint }>, months: number): TrendPoint[] {
+  private normalizeMonthlyTrendRows(
+    rows: Array<{ month: Date; count: bigint }>,
+    months: number,
+  ): TrendPoint[] {
     const values = new Map(
       rows.map((row) => [
         `${row.month.getUTCFullYear()}-${String(row.month.getUTCMonth() + 1).padStart(2, '0')}`,
@@ -333,7 +421,9 @@ export class AnalyticsService {
     const result: TrendPoint[] = [];
     const now = new Date();
     for (let offset = months - 1; offset >= 0; offset -= 1) {
-      const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - offset, 1));
+      const d = new Date(
+        Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - offset, 1),
+      );
       const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
       result.push({
         month: key,

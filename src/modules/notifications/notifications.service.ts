@@ -5,6 +5,7 @@ import { PaginationQuery } from '../../common/interfaces/pagination.interface.js
 import { paginatedResult } from '../../infrastructure/base/base-crud.service.js';
 import { NotificationType } from '../../common/enums/notification-type.enum.js';
 import { Prisma } from '../../generated/prisma/client.js';
+import { NotificationType as PrismaNotificationType } from '../../generated/prisma/enums.js';
 
 @Injectable()
 export class NotificationsService {
@@ -23,7 +24,7 @@ export class NotificationsService {
     return this.prisma.notification.create({
       data: {
         userId: input.userId,
-        type: input.type,
+        type: input.type as unknown as PrismaNotificationType,
         title: input.title,
         message: input.message,
         metadata: (input.metadata as Prisma.InputJsonValue | undefined) ?? undefined,
@@ -41,7 +42,7 @@ export class NotificationsService {
     await this.prisma.notification.createMany({
       data: Array.from(new Set(userIds)).map((userId) => ({
         userId,
-        type: input.type,
+        type: input.type as unknown as PrismaNotificationType,
         title: input.title,
         message: input.message,
         metadata: (input.metadata as Prisma.InputJsonValue | undefined) ?? undefined,
