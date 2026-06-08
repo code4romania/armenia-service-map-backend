@@ -3,6 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import nodemailer, { Transporter } from 'nodemailer';
 import { renderInvitationTemplate, InvitationTemplateInput } from './templates/invitation.template.js';
 import { renderResetPasswordTemplate } from './templates/reset-password.template.js';
+import { renderSubscriptionConfirmationTemplate, SubscriptionLocale } from './templates/subscription-confirmation.template.js';
+import { renderNewServiceNotificationTemplate } from './templates/new-service-notification.template.js';
 
 type EmailRuntimeConfig = {
   host: string;
@@ -95,5 +97,28 @@ export class EmailService {
       subject,
       html,
     });
+  }
+
+  async sendSubscriptionConfirmation(input: {
+    to: string;
+    locale: SubscriptionLocale;
+    regionName?: string;
+    topicName?: string;
+    unsubscribeUrl: string;
+  }) {
+    const { subject, html } = renderSubscriptionConfirmationTemplate(input);
+    await this.transport.sendMail({ from: this.fromAddress, to: input.to, subject, html });
+  }
+
+  async sendNewServiceNotification(input: {
+    to: string;
+    locale: SubscriptionLocale;
+    serviceTitle: string;
+    serviceShortDescription: string;
+    serviceUrl: string;
+    unsubscribeUrl: string;
+  }) {
+    const { subject, html } = renderNewServiceNotificationTemplate(input);
+    await this.transport.sendMail({ from: this.fromAddress, to: input.to, subject, html });
   }
 }
