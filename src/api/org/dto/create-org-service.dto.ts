@@ -23,6 +23,13 @@ export class CreateOrgServiceDto {
   @IsString()
   descriptionHy?: string;
 
+  @IsString()
+  howToAccess: string;
+
+  @IsOptional()
+  @IsString()
+  howToAccessHy?: string;
+
   @IsOptional()
   @IsUUID()
   regionId?: string;

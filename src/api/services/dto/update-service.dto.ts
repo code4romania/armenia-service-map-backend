@@ -27,6 +27,14 @@ export class UpdateServiceDto {
   descriptionHy?: string;
 
   @IsOptional()
+  @IsString()
+  howToAccess?: string;
+
+  @IsOptional()
+  @IsString()
+  howToAccessHy?: string;
+
+  @IsOptional()
   @IsUUID()
   regionId?: string;
 

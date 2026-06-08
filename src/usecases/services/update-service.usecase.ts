@@ -17,6 +17,8 @@ export class UpdateServiceUseCase {
     shortDescriptionHy?: string;
     description?: string;
     descriptionHy?: string;
+    howToAccess?: string;
+    howToAccessHy?: string;
     regionId?: string;
     isAvailable?: boolean;
     status?: ServiceStatus;

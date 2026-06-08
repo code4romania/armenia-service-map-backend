@@ -23,6 +23,13 @@ export class CreateServiceDto {
   @IsString()
   descriptionHy?: string;
 
+  @IsString()
+  howToAccess: string;
+
+  @IsOptional()
+  @IsString()
+  howToAccessHy?: string;
+
   @IsUUID()
   organisationId: string;
 
