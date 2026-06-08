@@ -32,6 +32,21 @@ describe('PublicController.getService', () => {
     expect(result.availabilityState).toBe('AVAILABLE');
   });
 
+  it('computes availabilityState from the service fields, not a constant', async () => {
+    // isAvailable: false is deterministic (clock-independent) and proves real computation
+    const { controller } = makeController({
+      id: 's1',
+      status: 'PUBLISHED',
+      isAvailable: false,
+      availabilityStart: null,
+      availabilityEnd: null,
+    });
+
+    const result = await controller.getService('s1');
+
+    expect(result.availabilityState).toBe('UNAVAILABLE');
+  });
+
   it('throws NotFound for a non-PUBLISHED service', async () => {
     const { controller } = makeController({ id: 's1', status: 'DRAFT' });
 

@@ -103,6 +103,8 @@ export class PublicController {
     if (service.status !== 'PUBLISHED') {
       throw new NotFoundException('Service not found');
     }
+    // availabilityState is decorated here (not in GetOneServiceUseCase) so it stays
+    // public-only — that use case is also shared by the admin and org controllers.
     return withAvailabilityState(service, new Date());
   }
 
