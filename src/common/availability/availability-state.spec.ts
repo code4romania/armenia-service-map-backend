@@ -1,4 +1,4 @@
-import { computeAvailabilityState, withAvailabilityState } from './availability-state';
+import { computeAvailabilityState, startOfUtcDay, withAvailabilityState } from './availability-state';
 
 const NOW = new Date('2026-06-08T11:00:00.000Z'); // arbitrary time of day
 
@@ -68,5 +68,13 @@ describe('withAvailabilityState', () => {
   it('attaches availabilityState to the service object', () => {
     const service = { id: 's1', isAvailable: true, availabilityStart: null, availabilityEnd: null };
     expect(withAvailabilityState(service, NOW)).toEqual({ ...service, availabilityState: 'AVAILABLE' });
+  });
+});
+
+describe('startOfUtcDay', () => {
+  it('floors an intra-day UTC timestamp to midnight', () => {
+    expect(startOfUtcDay(new Date('2026-06-08T23:59:59.999Z')).toISOString()).toBe(
+      '2026-06-08T00:00:00.000Z',
+    );
   });
 });
