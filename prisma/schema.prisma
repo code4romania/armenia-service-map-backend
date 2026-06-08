@@ -54,6 +54,7 @@ enum NeedReportEventType {
 }
 
 enum NotificationType {
+  NEED_SUBMITTED
   NEED_ASSIGNED
   NEED_STATUS_CHANGED
   NEED_COMMENT_ADDED
