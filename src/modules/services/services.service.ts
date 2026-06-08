@@ -79,6 +79,8 @@ export class ServicesService {
     shortDescriptionHy?: string;
     description: string;
     descriptionHy?: string;
+    howToAccess: string;
+    howToAccessHy?: string;
     organisationId: string;
     regionId?: string;
     isAvailable?: boolean;
@@ -110,6 +112,8 @@ export class ServicesService {
     shortDescriptionHy?: string;
     description?: string;
     descriptionHy?: string;
+    howToAccess?: string;
+    howToAccessHy?: string;
     regionId?: string;
     isAvailable?: boolean;
     status?: ServiceStatus;

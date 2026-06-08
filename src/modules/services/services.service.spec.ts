@@ -22,4 +22,28 @@ describe('ServicesService', () => {
       }),
     );
   });
+
+  it('forwards howToAccess fields when creating a service', async () => {
+    const create = jest.fn().mockResolvedValue({ id: 's1' });
+    const prisma = { service: { create } };
+    const service = new ServicesService(prisma as never, new DomainExceptionService());
+
+    await service.create({
+      title: 'T',
+      shortDescription: 'S',
+      description: 'D',
+      howToAccess: '<p>Call us</p>',
+      howToAccessHy: '<p>Զանգեք մեզ</p>',
+      organisationId: 'o1',
+    });
+
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          howToAccess: '<p>Call us</p>',
+          howToAccessHy: '<p>Զանգեք մեզ</p>',
+        }),
+      }),
+    );
+  });
 });
