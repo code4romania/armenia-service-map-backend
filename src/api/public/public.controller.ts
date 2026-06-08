@@ -23,6 +23,7 @@ import { LogPublicSearchBatchDto } from './dto/log-public-search-batch.dto.js';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto.js';
 import { UnsubscribeDto } from './dto/unsubscribe.dto.js';
 import { EntityStatus } from '../../common/enums/entity-status.enum.js';
+import { withAvailabilityState } from '../../common/availability/availability-state.js';
 
 @Controller('public')
 @Public()
@@ -102,7 +103,7 @@ export class PublicController {
     if (service.status !== 'PUBLISHED') {
       throw new NotFoundException('Service not found');
     }
-    return service;
+    return withAvailabilityState(service, new Date());
   }
 
   @Post('needs')
