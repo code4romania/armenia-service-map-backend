@@ -1,4 +1,5 @@
 import { escapeHtml } from './escape-html.js';
+import { renderEmailLayout } from './layout.js';
 
 export type SubscriptionLocale = 'en' | 'hy';
 
@@ -17,6 +18,7 @@ const strings: Record<SubscriptionLocale, {
   anyFilters: string;
   promise: string;
   unsubscribe: string;
+  footerNote: string;
 }> = {
   en: {
     subject: 'You are subscribed to new services',
@@ -26,6 +28,7 @@ const strings: Record<SubscriptionLocale, {
     anyFilters: 'all new services',
     promise: 'We will email you whenever a new service matching these filters is added.',
     unsubscribe: 'Unsubscribe',
+    footerNote: 'You received this email because you subscribed to new service alerts on RefugeeSupport.',
   },
   hy: {
     subject: 'Դուք բաժանորդագրված եք նոր ծառայություններին',
@@ -35,20 +38,24 @@ const strings: Record<SubscriptionLocale, {
     anyFilters: 'բոլոր նոր ծառայությունների մասին',
     promise: 'Մենք ձեզ նամակ կուղարկենք, երբ ավելացվի այս զտիչներին համապատասխան նոր ծառայություն։',
     unsubscribe: 'Չեղարկել բաժանորդագրությունը',
+    footerNote: 'Դուք ստացել եք այս նամակը, քանի որ բաժանորդագրվել եք RefugeeSupport-ի նոր ծառայությունների ծանուցումներին։',
   },
 };
 
 export function renderSubscriptionConfirmationTemplate(input: SubscriptionConfirmationInput): { subject: string; html: string } {
   const s = strings[input.locale] ?? strings.en;
   const filters = [input.regionName, input.topicName].filter(Boolean).map(escapeHtml).join(' · ') || s.anyFilters;
-  const html = `
-    <div style="font-family: Arial, sans-serif; line-height: 1.5;">
-      <h2>${s.heading}</h2>
-      <p>${s.intro}</p>
-      <p><strong>${s.filtersLabel}</strong> ${filters}</p>
-      <p>${s.promise}</p>
-      <p><a href="${input.unsubscribeUrl}">${s.unsubscribe}</a></p>
-    </div>
+  const bodyHtml = `
+    <p style="margin: 0 0 16px;">${s.intro}</p>
+    <p style="margin: 0 0 16px;"><strong>${s.filtersLabel}</strong> ${filters}</p>
+    <p style="margin: 0;">${s.promise}</p>
   `.trim();
+  const html = renderEmailLayout({
+    heading: s.heading,
+    bodyHtml,
+    footerNote: s.footerNote,
+    unsubscribeUrl: input.unsubscribeUrl,
+    unsubscribeLabel: s.unsubscribe,
+  });
   return { subject: s.subject, html };
 }
