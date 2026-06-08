@@ -1,4 +1,5 @@
 import type { SubscriptionLocale } from './subscription-confirmation.template.js';
+import { escapeHtml } from './escape-html.js';
 
 export type NewServiceNotificationInput = {
   locale: SubscriptionLocale;
@@ -25,11 +26,11 @@ const strings: Record<SubscriptionLocale, { subject: string; heading: string; ct
 
 export function renderNewServiceNotificationTemplate(input: NewServiceNotificationInput): { subject: string; html: string } {
   const s = strings[input.locale] ?? strings.en;
-  const description = input.serviceShortDescription.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  const description = escapeHtml(input.serviceShortDescription.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim());
   const html = `
     <div style="font-family: Arial, sans-serif; line-height: 1.5;">
       <h2>${s.heading}</h2>
-      <h3>${input.serviceTitle}</h3>
+      <h3>${escapeHtml(input.serviceTitle)}</h3>
       <p>${description}</p>
       <p><a href="${input.serviceUrl}">${s.cta}</a></p>
       <hr />

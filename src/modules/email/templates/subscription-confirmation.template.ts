@@ -1,3 +1,5 @@
+import { escapeHtml } from './escape-html.js';
+
 export type SubscriptionLocale = 'en' | 'hy';
 
 export type SubscriptionConfirmationInput = {
@@ -38,7 +40,7 @@ const strings: Record<SubscriptionLocale, {
 
 export function renderSubscriptionConfirmationTemplate(input: SubscriptionConfirmationInput): { subject: string; html: string } {
   const s = strings[input.locale] ?? strings.en;
-  const filters = [input.regionName, input.topicName].filter(Boolean).join(' · ') || s.anyFilters;
+  const filters = [input.regionName, input.topicName].filter(Boolean).map(escapeHtml).join(' · ') || s.anyFilters;
   const html = `
     <div style="font-family: Arial, sans-serif; line-height: 1.5;">
       <h2>${s.heading}</h2>

@@ -58,4 +58,20 @@ describe('EmailService subscription emails', () => {
     expect(arg.html).toContain('http://x/services/1');
     expect(arg.html).toContain('http://x/unsubscribe?token=tok');
   });
+
+  it('escapes HTML in the service title', async () => {
+    const { service, sendMail } = makeService();
+    await service.sendNewServiceNotification({
+      to: 'a@b.com',
+      locale: 'en',
+      serviceTitle: '<script>x</script>Clinic & Co',
+      serviceShortDescription: 'desc',
+      serviceUrl: 'http://x/services/1',
+      unsubscribeUrl: 'http://x/unsubscribe?token=tok',
+    });
+    const arg = sendMail.mock.calls.at(-1)[0];
+    expect(arg.html).not.toContain('<script>x</script>');
+    expect(arg.html).toContain('&lt;script&gt;');
+    expect(arg.html).toContain('Clinic &amp; Co');
+  });
 });
