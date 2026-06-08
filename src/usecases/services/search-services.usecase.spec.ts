@@ -29,7 +29,7 @@ describe('SearchServicesUseCase', () => {
     const arg = findMany.mock.calls[0][0];
     expect(arg.isAvailable).toBeUndefined();
     expect(arg.availableOn).toBeInstanceOf(Date);
-    // confirm startOfUtcDay was actually applied (value floored to UTC midnight)
+    // confirm the reference date was floored (Armenia-day start, still a UTC-midnight timestamp)
     expect(arg.availableOn.toISOString()).toMatch(/T00:00:00\.000Z$/);
   });
 

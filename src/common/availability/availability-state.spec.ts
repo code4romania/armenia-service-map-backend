@@ -1,4 +1,9 @@
-import { computeAvailabilityState, startOfUtcDay, withAvailabilityState } from './availability-state';
+import {
+  computeAvailabilityState,
+  startOfArmeniaDay,
+  startOfUtcDay,
+  withAvailabilityState,
+} from './availability-state';
 
 const NOW = new Date('2026-06-08T11:00:00.000Z'); // arbitrary time of day
 
@@ -76,5 +81,34 @@ describe('startOfUtcDay', () => {
     expect(startOfUtcDay(new Date('2026-06-08T23:59:59.999Z')).toISOString()).toBe(
       '2026-06-08T00:00:00.000Z',
     );
+  });
+});
+
+describe('Armenia timezone boundary (UTC+4)', () => {
+  // 2026-06-08T22:00Z is already 2026-06-09 02:00 in Armenia.
+  const LATE_UTC = new Date('2026-06-08T22:00:00.000Z');
+
+  it('resolves the reference date to the Armenian calendar day', () => {
+    expect(startOfArmeniaDay(LATE_UTC).toISOString()).toBe('2026-06-09T00:00:00.000Z');
+  });
+
+  it('marks a service UNAVAILABLE once Armenian midnight passes the end date', () => {
+    // End date 2026-06-08: still available all of June 8 in Armenia, unavailable from June 9.
+    expect(
+      computeAvailabilityState(
+        { isAvailable: true, availabilityStart: null, availabilityEnd: new Date('2026-06-08') },
+        LATE_UTC,
+      ),
+    ).toBe('UNAVAILABLE');
+  });
+
+  it('treats a service as AVAILABLE on its start day in Armenian time', () => {
+    // Start date 2026-06-09: it is already June 9 in Armenia, so the service has started.
+    expect(
+      computeAvailabilityState(
+        { isAvailable: true, availabilityStart: new Date('2026-06-09'), availabilityEnd: null },
+        LATE_UTC,
+      ),
+    ).toBe('AVAILABLE');
   });
 });
