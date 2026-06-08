@@ -34,6 +34,7 @@ export class ServicesService {
       ...(organisationId ? { organisationId } : {}),
       ...(regionId ? { regionId } : {}),
       ...(isAvailable !== undefined ? { isAvailable } : {}),
+      // availableOn forces isAvailable: true; callers pass one or the other, never both.
       ...(availableOn
         ? {
             isAvailable: true,
