@@ -9,6 +9,7 @@ import { UploadModule } from '../modules/upload/upload.module.js';
 import { NotificationsModule } from '../modules/notifications/notifications.module.js';
 import { EmailModule } from '../modules/email/email.module.js';
 import { AuthModule } from '../modules/auth/auth.module.js';
+import { SubscriptionsModule } from '../modules/subscriptions/subscriptions.module.js';
 // Taxonomy
 import { GetManyTopicsUseCase } from './taxonomy/get-many-topics.usecase.js';
 import { GetOneTopicUseCase } from './taxonomy/get-one-topic.usecase.js';
@@ -87,6 +88,10 @@ import { GetNotificationsUseCase } from './notifications/get-notifications.useca
 import { GetUnreadCountUseCase } from './notifications/get-unread-count.usecase.js';
 import { MarkNotificationReadUseCase } from './notifications/mark-notification-read.usecase.js';
 import { MarkAllNotificationsReadUseCase } from './notifications/mark-all-notifications-read.usecase.js';
+// Subscriptions
+import { CreateSubscriptionUseCase } from './subscriptions/create-subscription.usecase.js';
+import { UnsubscribeUseCase } from './subscriptions/unsubscribe.usecase.js';
+import { NotifyMatchingSubscribersUseCase } from './subscriptions/notify-matching-subscribers.usecase.js';
 
 const taxonomyUseCases = [
   GetManyTopicsUseCase,
@@ -180,9 +185,15 @@ const notificationUseCases = [
   MarkAllNotificationsReadUseCase,
 ];
 
+const subscriptionUseCases = [
+  CreateSubscriptionUseCase,
+  UnsubscribeUseCase,
+  NotifyMatchingSubscribersUseCase,
+];
+
 @Module({
-  imports: [TaxonomyModule, OrganisationsModule, UsersModule, ServicesModule, NeedsModule, AnalyticsModule, UploadModule, NotificationsModule, EmailModule, AuthModule],
-  providers: [...taxonomyUseCases, ...organisationUseCases, ...userUseCases, ...serviceUseCases, ...needUseCases, ...analyticsUseCases, ...uploadUseCases, ...notificationUseCases],
-  exports: [...taxonomyUseCases, ...organisationUseCases, ...userUseCases, ...serviceUseCases, ...needUseCases, ...analyticsUseCases, ...uploadUseCases, ...notificationUseCases],
+  imports: [TaxonomyModule, OrganisationsModule, UsersModule, ServicesModule, NeedsModule, AnalyticsModule, UploadModule, NotificationsModule, EmailModule, AuthModule, SubscriptionsModule],
+  providers: [...taxonomyUseCases, ...organisationUseCases, ...userUseCases, ...serviceUseCases, ...needUseCases, ...analyticsUseCases, ...uploadUseCases, ...notificationUseCases, ...subscriptionUseCases],
+  exports: [...taxonomyUseCases, ...organisationUseCases, ...userUseCases, ...serviceUseCases, ...needUseCases, ...analyticsUseCases, ...uploadUseCases, ...notificationUseCases, ...subscriptionUseCases],
 })
 export class UseCaseModule {}
