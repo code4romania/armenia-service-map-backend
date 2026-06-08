@@ -26,13 +26,23 @@ export class ServicesService {
     topicId?: string;
     isAvailable?: boolean;
     status?: ServiceStatus;
+    availableOn?: Date;
   }) {
-    const { page = 1, perPage = 10, sortBy = 'title', sortOrder = 'asc', search, organisationId, regionId, topicId, isAvailable, status } = query;
+    const { page = 1, perPage = 10, sortBy = 'title', sortOrder = 'asc', search, organisationId, regionId, topicId, isAvailable, status, availableOn } = query;
     const where = {
       deletedAt: null,
       ...(organisationId ? { organisationId } : {}),
       ...(regionId ? { regionId } : {}),
       ...(isAvailable !== undefined ? { isAvailable } : {}),
+      ...(availableOn
+        ? {
+            isAvailable: true,
+            AND: [
+              { OR: [{ availabilityStart: null }, { availabilityStart: { lte: availableOn } }] },
+              { OR: [{ availabilityEnd: null }, { availabilityEnd: { gte: availableOn } }] },
+            ],
+          }
+        : {}),
       ...(status ? { status } : {}),
       ...(topicId ? { topics: { some: { topicId } } } : {}),
       ...(search

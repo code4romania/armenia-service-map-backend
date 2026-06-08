@@ -46,4 +46,38 @@ describe('ServicesService', () => {
       }),
     );
   });
+
+  it('filters to effectively-available services when availableOn is set', async () => {
+    const findMany = jest.fn().mockResolvedValue([]);
+    const count = jest.fn().mockResolvedValue(0);
+    const prisma = { service: { findMany, count } };
+    const service = new ServicesService(prisma as never, new DomainExceptionService());
+
+    const availableOn = new Date('2026-06-08T00:00:00.000Z');
+    await service.findMany({ availableOn });
+
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          isAvailable: true,
+          AND: [
+            { OR: [{ availabilityStart: null }, { availabilityStart: { lte: availableOn } }] },
+            { OR: [{ availabilityEnd: null }, { availabilityEnd: { gte: availableOn } }] },
+          ],
+        }),
+      }),
+    );
+  });
+
+  it('does not add the availability AND clause when availableOn is absent', async () => {
+    const findMany = jest.fn().mockResolvedValue([]);
+    const count = jest.fn().mockResolvedValue(0);
+    const prisma = { service: { findMany, count } };
+    const service = new ServicesService(prisma as never, new DomainExceptionService());
+
+    await service.findMany({});
+
+    const callArg = findMany.mock.calls[0][0];
+    expect(callArg.where.AND).toBeUndefined();
+  });
 });
