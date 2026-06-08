@@ -75,6 +75,7 @@ model Region {
   services      Service[]
   needReports   NeedReport[]
   searchLogs    SearchLog[]
+  subscriptions Subscription[]
 
   @@map("regions")
 }
@@ -155,9 +156,10 @@ model Topic {
   createdAt DateTime     @default(now()) @map("created_at")
   updatedAt DateTime     @updatedAt @map("updated_at")
 
-  services ServiceTopic[]
-  parent   Topic?        @relation("TopicHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
-  children Topic[]       @relation("TopicHierarchy")
+  services      ServiceTopic[]
+  parent        Topic?        @relation("TopicHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children      Topic[]       @relation("TopicHierarchy")
+  subscriptions Subscription[]
 
   @@index([parentId])
   @@map("topics")
@@ -311,4 +313,32 @@ model SearchLog {
   region Region? @relation(fields: [regionId], references: [id])
 
   @@map("search_logs")
+}
+
+model Subscriber {
+  id               String         @id @default(uuid())
+  email            String         @unique
+  locale           String         @default("en")
+  unsubscribeToken String         @unique @map("unsubscribe_token")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+  subscriptions    Subscription[]
+
+  @@map("subscribers")
+}
+
+model Subscription {
+  id           String     @id @default(uuid())
+  subscriberId String     @map("subscriber_id")
+  regionId     String?    @map("region_id")
+  topicId      String?    @map("topic_id")
+  createdAt    DateTime   @default(now()) @map("created_at")
+
+  subscriber   Subscriber @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+  region       Region?    @relation(fields: [regionId], references: [id])
+  topic        Topic?     @relation(fields: [topicId], references: [id])
+
+  @@index([regionId])
+  @@index([topicId])
+  @@map("subscriptions")
 }
