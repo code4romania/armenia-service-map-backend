@@ -12,17 +12,26 @@ describe('CreateJoinNetworkRequestUseCase', () => {
     };
     const prisma = {
       user: {
-        findMany: jest.fn().mockResolvedValue([{ id: 'super-1' }, { id: 'super-2' }]),
+        findMany: jest.fn().mockResolvedValue([
+          { id: 'super-1', email: 'a1@x.com' },
+          { id: 'super-2', email: 'a2@x.com' },
+        ]),
       },
     };
     const notifications = {
       createMany: jest.fn().mockResolvedValue(undefined),
     };
+    const email = {
+      sendNewJoinNetworkRequestToAdmin: jest.fn().mockResolvedValue(undefined),
+    };
+    const config = { get: jest.fn().mockReturnValue('http://app.test') };
 
     const useCase = new CreateJoinNetworkRequestUseCase(
       organisationsService as never,
       prisma as never,
       notifications as never,
+      email as never,
+      config as never,
     );
 
     const result = await useCase.execute({
@@ -44,6 +53,51 @@ describe('CreateJoinNetworkRequestUseCase', () => {
         type: 'ORG_PENDING_REVIEW',
       }),
     );
+    expect(email.sendNewJoinNetworkRequestToAdmin).toHaveBeenCalledTimes(2);
+    expect(email.sendNewJoinNetworkRequestToAdmin).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'a1@x.com',
+        organisationName: 'Bridge to Hope',
+        contactName: 'Mariam Hakobyan',
+        contactEmail: 'mariam@example.com',
+        adminUrl: 'http://app.test/admin/organisations/org-1',
+      }),
+    );
+    expect(result.status).toBe(OrganisationStatus.PENDING);
+  });
+
+  it('still resolves when an admin email fails', async () => {
+    const organisationsService = {
+      create: jest.fn().mockResolvedValue({
+        id: 'org-1',
+        name: 'Bridge to Hope',
+        status: OrganisationStatus.PENDING,
+      }),
+    };
+    const prisma = {
+      user: { findMany: jest.fn().mockResolvedValue([{ id: 'super-1', email: 'a1@x.com' }]) },
+    };
+    const notifications = { createMany: jest.fn().mockResolvedValue(undefined) };
+    const email = {
+      sendNewJoinNetworkRequestToAdmin: jest.fn().mockRejectedValue(new Error('smtp down')),
+    };
+    const config = { get: jest.fn().mockReturnValue('http://app.test') };
+
+    const useCase = new CreateJoinNetworkRequestUseCase(
+      organisationsService as never,
+      prisma as never,
+      notifications as never,
+      email as never,
+      config as never,
+    );
+
+    const result = await useCase.execute({
+      organisationName: 'Bridge to Hope',
+      contactName: 'Mariam Hakobyan',
+      email: 'mariam@example.com',
+      servicesDescription: 'Legal aid.',
+    });
+
     expect(result.status).toBe(OrganisationStatus.PENDING);
   });
 });

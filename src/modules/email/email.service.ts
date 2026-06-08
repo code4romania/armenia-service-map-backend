@@ -5,6 +5,8 @@ import { renderInvitationTemplate, InvitationTemplateInput } from './templates/i
 import { renderResetPasswordTemplate } from './templates/reset-password.template.js';
 import { renderSubscriptionConfirmationTemplate, SubscriptionLocale } from './templates/subscription-confirmation.template.js';
 import { renderNewServiceNotificationTemplate } from './templates/new-service-notification.template.js';
+import { renderNewNeedReportAdminTemplate } from './templates/new-need-report-admin.template.js';
+import { renderNewJoinNetworkAdminTemplate } from './templates/new-join-network-admin.template.js';
 
 type EmailRuntimeConfig = {
   host: string;
@@ -120,5 +122,32 @@ export class EmailService {
   }) {
     const { subject, html } = renderNewServiceNotificationTemplate(input);
     await this.transport.sendMail({ from: this.fromAddress, to: input.to, subject, html });
+  }
+
+  async sendNewNeedReportToAdmin(input: {
+    to: string;
+    needTitle: string;
+    needDescription: string;
+    reporterName: string;
+    regionName?: string;
+    adminUrl: string;
+  }) {
+    const { to, ...rest } = input;
+    const { subject, html } = renderNewNeedReportAdminTemplate(rest);
+    await this.transport.sendMail({ from: this.fromAddress, to, subject, html });
+  }
+
+  async sendNewJoinNetworkRequestToAdmin(input: {
+    to: string;
+    organisationName: string;
+    contactName: string;
+    contactEmail: string;
+    servicesDescription: string;
+    regionName?: string;
+    adminUrl: string;
+  }) {
+    const { to, ...rest } = input;
+    const { subject, html } = renderNewJoinNetworkAdminTemplate(rest);
+    await this.transport.sendMail({ from: this.fromAddress, to, subject, html });
   }
 }
