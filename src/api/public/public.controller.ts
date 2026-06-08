@@ -14,10 +14,14 @@ import { GetOneServiceUseCase } from '../../usecases/services/get-one-service.us
 import { CreateNeedUseCase } from '../../usecases/needs/create-need.usecase.js';
 import { LogSearchUseCase } from '../../usecases/analytics/log-search.usecase.js';
 import { CreateJoinNetworkRequestUseCase } from '../../usecases/organisations/create-join-network-request.usecase.js';
+import { CreateSubscriptionUseCase } from '../../usecases/subscriptions/create-subscription.usecase.js';
+import { UnsubscribeUseCase } from '../../usecases/subscriptions/unsubscribe.usecase.js';
 import { ServiceQueryDto } from '../services/dto/service-query.dto.js';
 import { CreateNeedDto } from '../needs/dto/create-need.dto.js';
 import { JoinNetworkDto } from './dto/join-network.dto.js';
 import { LogPublicSearchBatchDto } from './dto/log-public-search-batch.dto.js';
+import { CreateSubscriptionDto } from './dto/create-subscription.dto.js';
+import { UnsubscribeDto } from './dto/unsubscribe.dto.js';
 import { EntityStatus } from '../../common/enums/entity-status.enum.js';
 
 @Controller('public')
@@ -30,6 +34,8 @@ export class PublicController {
     private readonly createNeed: CreateNeedUseCase,
     private readonly logSearch: LogSearchUseCase,
     private readonly createJoinNetworkRequest: CreateJoinNetworkRequestUseCase,
+    private readonly createSubscription: CreateSubscriptionUseCase,
+    private readonly unsubscribe: UnsubscribeUseCase,
   ) {}
 
   @Get('regions')
@@ -107,5 +113,15 @@ export class PublicController {
   @Post('join-network')
   async submitJoinNetwork(@Body() dto: JoinNetworkDto) {
     return this.createJoinNetworkRequest.execute(dto);
+  }
+
+  @Post('subscriptions')
+  async subscribe(@Body() dto: CreateSubscriptionDto) {
+    return this.createSubscription.execute(dto);
+  }
+
+  @Post('subscriptions/unsubscribe')
+  async unsubscribeFromServices(@Body() dto: UnsubscribeDto) {
+    return this.unsubscribe.execute(dto.token);
   }
 }
