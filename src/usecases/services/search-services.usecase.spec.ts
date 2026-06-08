@@ -29,6 +29,8 @@ describe('SearchServicesUseCase', () => {
     const arg = findMany.mock.calls[0][0];
     expect(arg.isAvailable).toBeUndefined();
     expect(arg.availableOn).toBeInstanceOf(Date);
+    // confirm startOfUtcDay was actually applied (value floored to UTC midnight)
+    expect(arg.availableOn.toISOString()).toMatch(/T00:00:00\.000Z$/);
   });
 
   it('attaches availabilityState to each returned service', async () => {
