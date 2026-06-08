@@ -173,6 +173,8 @@ model Service {
   shortDescriptionHy String?      @map("short_description_hy")
   description       String
   descriptionHy     String?       @map("description_hy")
+  howToAccess       String        @default("") @map("how_to_access")
+  howToAccessHy     String?       @map("how_to_access_hy")
   organisationId    String        @map("organisation_id")
   regionId          String?       @map("region_id")
   status            ServiceStatus @default(DRAFT)
