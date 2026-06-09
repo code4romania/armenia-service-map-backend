@@ -10,17 +10,22 @@ function failedProps(payload: Record<string, unknown>) {
   return validateSync(dto).map((e) => e.property);
 }
 
+const validHy = {
+  titleHy: 'Վերնագիր',
+  shortDescriptionHy: 'կարճ',
+  descriptionHy: 'նկ',
+  howToAccessHy: 'հաս',
+  organisationId: orgId,
+};
+
 describe('CreateServiceDto language requirements', () => {
-  it('rejects a payload missing Armenian title', () => {
-    const props = failedProps({
-      titleHy: '',
-      shortDescriptionHy: 'կարճ',
-      descriptionHy: 'նկ',
-      howToAccessHy: 'հաս',
-      organisationId: orgId,
-    });
-    expect(props).toContain('titleHy');
-  });
+  it.each(['titleHy', 'shortDescriptionHy', 'descriptionHy', 'howToAccessHy'])(
+    'rejects a payload with empty %s',
+    (field) => {
+      const props = failedProps({ ...validHy, [field]: '' });
+      expect(props).toContain(field);
+    },
+  );
 
   it('accepts a payload with Armenian content and no English', () => {
     const props = failedProps({
