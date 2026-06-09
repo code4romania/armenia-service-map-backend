@@ -111,7 +111,7 @@ describe('ServicesService', () => {
 
     await expect(
       service.create({ title: 'T', shortDescription: 'S', description: 'D', howToAccess: 'x' }),
-    ).rejects.toThrow();
+    ).rejects.toThrow('must have an organisation or an external organisation name');
     expect(create).not.toHaveBeenCalled();
   });
 
@@ -129,7 +129,7 @@ describe('ServicesService', () => {
         organisationId: 'o1',
         externalOrganisationName: 'Helping Hands',
       }),
-    ).rejects.toThrow();
+    ).rejects.toThrow('not both');
     expect(create).not.toHaveBeenCalled();
   });
 });
