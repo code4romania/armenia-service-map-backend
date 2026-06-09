@@ -30,8 +30,11 @@ describe('ServicesService', () => {
 
     await service.create({
       title: 'T',
+      titleHy: 'Տ',
       shortDescription: 'S',
+      shortDescriptionHy: 'Կ',
       description: 'D',
+      descriptionHy: 'Ն',
       howToAccess: '<p>Call us</p>',
       howToAccessHy: '<p>Զանգեք մեզ</p>',
       organisationId: 'o1',
@@ -88,9 +91,13 @@ describe('ServicesService', () => {
 
     await service.create({
       title: 'T',
+      titleHy: 'Տ',
       shortDescription: 'S',
+      shortDescriptionHy: 'Կ',
       description: 'D',
+      descriptionHy: 'Ն',
       howToAccess: '<p>x</p>',
+      howToAccessHy: '<p>հ</p>',
       externalOrganisationName: 'Helping Hands',
     });
 
@@ -110,7 +117,16 @@ describe('ServicesService', () => {
     const service = new ServicesService(prisma as never, new DomainExceptionService());
 
     await expect(
-      service.create({ title: 'T', shortDescription: 'S', description: 'D', howToAccess: 'x' }),
+      service.create({
+        title: 'T',
+        titleHy: 'Տ',
+        shortDescription: 'S',
+        shortDescriptionHy: 'Կ',
+        description: 'D',
+        descriptionHy: 'Ն',
+        howToAccess: 'x',
+        howToAccessHy: 'հ',
+      }),
     ).rejects.toThrow('must have an organisation or an external organisation name');
     expect(create).not.toHaveBeenCalled();
   });
@@ -123,9 +139,13 @@ describe('ServicesService', () => {
     await expect(
       service.create({
         title: 'T',
+        titleHy: 'Տ',
         shortDescription: 'S',
+        shortDescriptionHy: 'Կ',
         description: 'D',
+        descriptionHy: 'Ն',
         howToAccess: 'x',
+        howToAccessHy: 'հ',
         organisationId: 'o1',
         externalOrganisationName: 'Helping Hands',
       }),

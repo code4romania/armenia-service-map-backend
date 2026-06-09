@@ -1,34 +1,38 @@
-import { IsString, IsOptional, IsBoolean, IsUUID, IsArray, IsDateString, IsEnum } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsUUID, IsArray, IsDateString, IsEnum, IsNotEmpty } from 'class-validator';
 import { ServiceStatus } from '../../../common/enums/service-status.enum.js';
 
 export class CreateOrgServiceDto {
+  @IsOptional()
   @IsString()
-  title: string;
+  title?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  titleHy: string;
 
   @IsOptional()
   @IsString()
-  titleHy?: string;
+  shortDescription?: string;
 
   @IsString()
-  shortDescription: string;
-
-  @IsOptional()
-  @IsString()
-  shortDescriptionHy?: string;
-
-  @IsString()
-  description: string;
+  @IsNotEmpty()
+  shortDescriptionHy: string;
 
   @IsOptional()
   @IsString()
-  descriptionHy?: string;
+  description?: string;
 
   @IsString()
-  howToAccess: string;
+  @IsNotEmpty()
+  descriptionHy: string;
 
   @IsOptional()
   @IsString()
-  howToAccessHy?: string;
+  howToAccess?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  howToAccessHy: string;
 
   @IsOptional()
   @IsUUID()

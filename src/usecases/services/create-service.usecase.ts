@@ -11,14 +11,14 @@ export class CreateServiceUseCase {
   ) {}
 
   async execute(data: {
-    title: string;
-    titleHy?: string;
-    shortDescription: string;
-    shortDescriptionHy?: string;
-    description: string;
-    descriptionHy?: string;
-    howToAccess: string;
-    howToAccessHy?: string;
+    title?: string;
+    titleHy: string;
+    shortDescription?: string;
+    shortDescriptionHy: string;
+    description?: string;
+    descriptionHy: string;
+    howToAccess?: string;
+    howToAccessHy: string;
     organisationId?: string;
     externalOrganisationName?: string;
     regionId?: string;
