@@ -80,4 +80,56 @@ describe('ServicesService', () => {
     const callArg = findMany.mock.calls[0][0];
     expect(callArg.where.AND).toBeUndefined();
   });
+
+  it('creates a service with an external organisation name and null organisationId', async () => {
+    const create = jest.fn().mockResolvedValue({ id: 's1' });
+    const prisma = { service: { create } };
+    const service = new ServicesService(prisma as never, new DomainExceptionService());
+
+    await service.create({
+      title: 'T',
+      shortDescription: 'S',
+      description: 'D',
+      howToAccess: '<p>x</p>',
+      externalOrganisationName: 'Helping Hands',
+    });
+
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          externalOrganisationName: 'Helping Hands',
+          organisationId: null,
+        }),
+      }),
+    );
+  });
+
+  it('rejects creating a service with neither organisationId nor externalOrganisationName', async () => {
+    const create = jest.fn();
+    const prisma = { service: { create } };
+    const service = new ServicesService(prisma as never, new DomainExceptionService());
+
+    await expect(
+      service.create({ title: 'T', shortDescription: 'S', description: 'D', howToAccess: 'x' }),
+    ).rejects.toThrow();
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('rejects creating a service with both organisationId and externalOrganisationName', async () => {
+    const create = jest.fn();
+    const prisma = { service: { create } };
+    const service = new ServicesService(prisma as never, new DomainExceptionService());
+
+    await expect(
+      service.create({
+        title: 'T',
+        shortDescription: 'S',
+        description: 'D',
+        howToAccess: 'x',
+        organisationId: 'o1',
+        externalOrganisationName: 'Helping Hands',
+      }),
+    ).rejects.toThrow();
+    expect(create).not.toHaveBeenCalled();
+  });
 });

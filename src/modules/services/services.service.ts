@@ -92,7 +92,8 @@ export class ServicesService {
     descriptionHy?: string;
     howToAccess: string;
     howToAccessHy?: string;
-    organisationId: string;
+    organisationId?: string;
+    externalOrganisationName?: string;
     regionId?: string;
     isAvailable?: boolean;
     status?: ServiceStatus;
@@ -101,7 +102,13 @@ export class ServicesService {
     targetGroupIds?: string[];
     topicIds?: string[];
   }) {
-    const { topicIds, targetGroupIds, ...serviceData } = data;
+    this.assertOrganisationXor(data.organisationId, data.externalOrganisationName, true);
+    const { topicIds, targetGroupIds, externalOrganisationName, ...rest } = data;
+    const serviceData = {
+      ...rest,
+      organisationId: externalOrganisationName ? null : data.organisationId,
+      externalOrganisationName: externalOrganisationName ?? null,
+    };
     return this.prisma.service.create({
       data: {
         ...serviceData,
@@ -164,6 +171,25 @@ export class ServicesService {
       where: { id },
       data: { deletedAt: new Date() },
     });
+  }
+
+  private assertOrganisationXor(
+    organisationId: string | undefined | null,
+    externalOrganisationName: string | undefined | null,
+    requireOne: boolean,
+  ) {
+    const hasOrg = Boolean(organisationId);
+    const hasExternal = Boolean(externalOrganisationName && externalOrganisationName.trim());
+    if (hasOrg && hasExternal) {
+      throw this.exceptions.badRequest(
+        'Provide either an organisation or an external organisation name, not both',
+      );
+    }
+    if (requireOne && !hasOrg && !hasExternal) {
+      throw this.exceptions.badRequest(
+        'A service must have an organisation or an external organisation name',
+      );
+    }
   }
 
   async verifyOwnership(serviceId: string, organisationId: string) {
