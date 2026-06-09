@@ -132,4 +132,66 @@ describe('ServicesService', () => {
     ).rejects.toThrow('not both');
     expect(create).not.toHaveBeenCalled();
   });
+
+  it('switches a service to an external organisation, clearing organisationId', async () => {
+    const update = jest.fn().mockResolvedValue({ id: 's1' });
+    const findUnique = jest.fn().mockResolvedValue({ id: 's1', organisationId: 'o1' });
+    const prisma = { service: { findUnique, update } };
+    const service = new ServicesService(prisma as never, new DomainExceptionService());
+
+    await service.update('s1', { externalOrganisationName: 'Helping Hands' });
+
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 's1' },
+        data: expect.objectContaining({
+          externalOrganisationName: 'Helping Hands',
+          organisationId: null,
+        }),
+      }),
+    );
+  });
+
+  it('switches a service back to a network organisation, clearing external name', async () => {
+    const update = jest.fn().mockResolvedValue({ id: 's1' });
+    const findUnique = jest.fn().mockResolvedValue({ id: 's1', organisationId: null });
+    const prisma = { service: { findUnique, update } };
+    const service = new ServicesService(prisma as never, new DomainExceptionService());
+
+    await service.update('s1', { organisationId: 'o2' });
+
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          organisationId: 'o2',
+          externalOrganisationName: null,
+        }),
+      }),
+    );
+  });
+
+  it('rejects an update setting both organisationId and externalOrganisationName', async () => {
+    const update = jest.fn();
+    const findUnique = jest.fn().mockResolvedValue({ id: 's1', organisationId: 'o1' });
+    const prisma = { service: { findUnique, update } };
+    const service = new ServicesService(prisma as never, new DomainExceptionService());
+
+    await expect(
+      service.update('s1', { organisationId: 'o2', externalOrganisationName: 'X' }),
+    ).rejects.toThrow('not both');
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it('leaves organisation fields untouched when neither is provided on update', async () => {
+    const update = jest.fn().mockResolvedValue({ id: 's1' });
+    const findUnique = jest.fn().mockResolvedValue({ id: 's1', organisationId: 'o1' });
+    const prisma = { service: { findUnique, update } };
+    const service = new ServicesService(prisma as never, new DomainExceptionService());
+
+    await service.update('s1', { title: 'New title' });
+
+    const callArg = update.mock.calls[0][0];
+    expect(callArg.data).not.toHaveProperty('organisationId');
+    expect(callArg.data).not.toHaveProperty('externalOrganisationName');
+  });
 });

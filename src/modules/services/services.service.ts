@@ -132,6 +132,8 @@ export class ServicesService {
     descriptionHy?: string;
     howToAccess?: string;
     howToAccessHy?: string;
+    organisationId?: string | null;
+    externalOrganisationName?: string | null;
     regionId?: string;
     isAvailable?: boolean;
     status?: ServiceStatus;
@@ -141,7 +143,8 @@ export class ServicesService {
     topicIds?: string[];
   }) {
     await this.findOne(id);
-    const { topicIds, targetGroupIds, ...serviceData } = data;
+    this.assertOrganisationXor(data.organisationId, data.externalOrganisationName, false);
+    const { topicIds, targetGroupIds, organisationId, externalOrganisationName, ...rest } = data;
 
     if (topicIds !== undefined) {
       await this.prisma.serviceTopic.deleteMany({ where: { serviceId: id } });
@@ -150,10 +153,18 @@ export class ServicesService {
       await this.prisma.serviceTargetGroup.deleteMany({ where: { serviceId: id } });
     }
 
+    const orgFields =
+      externalOrganisationName && externalOrganisationName.trim()
+        ? { externalOrganisationName, organisationId: null }
+        : organisationId
+          ? { organisationId, externalOrganisationName: null }
+          : {};
+
     return this.prisma.service.update({
       where: { id },
       data: {
-        ...serviceData,
+        ...rest,
+        ...orgFields,
         ...(topicIds !== undefined
           ? { topics: { create: topicIds.map((topicId) => ({ topicId })) } }
           : {}),
