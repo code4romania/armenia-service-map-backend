@@ -176,7 +176,8 @@ model Service {
   descriptionHy     String?       @map("description_hy")
   howToAccess       String        @default("") @map("how_to_access")
   howToAccessHy     String?       @map("how_to_access_hy")
-  organisationId    String        @map("organisation_id")
+  organisationId           String?       @map("organisation_id")
+  externalOrganisationName String?       @map("external_organisation_name")
   regionId          String?       @map("region_id")
   status            ServiceStatus @default(DRAFT)
   isAvailable       Boolean       @default(true) @map("is_available")
@@ -186,7 +187,7 @@ model Service {
   updatedAt         DateTime      @updatedAt @map("updated_at")
   deletedAt         DateTime?     @map("deleted_at")
 
-  organisation  Organisation       @relation(fields: [organisationId], references: [id])
+  organisation  Organisation?      @relation(fields: [organisationId], references: [id])
   region        Region?            @relation(fields: [regionId], references: [id])
   topics        ServiceTopic[]
   targetGroups  ServiceTargetGroup[]
