@@ -24,11 +24,14 @@ export class ServicesService {
     organisationId?: string;
     regionId?: string;
     topicId?: string;
+    topicIds?: string[];
     isAvailable?: boolean;
     status?: ServiceStatus;
     availableOn?: Date;
   }) {
-    const { page = 1, perPage = 10, sortBy = 'title', sortOrder = 'asc', search, organisationId, regionId, topicId, isAvailable, status, availableOn } = query;
+    const { page = 1, perPage = 10, sortBy = 'title', sortOrder = 'asc', search, organisationId, regionId, topicId, topicIds, isAvailable, status, availableOn } = query;
+    // Union of any explicit topic ids plus the legacy single topicId — a service matches if tagged with ANY of them.
+    const allTopicIds = [...(topicIds ?? []), ...(topicId ? [topicId] : [])];
     const where = {
       deletedAt: null,
       ...(organisationId ? { organisationId } : {}),
@@ -45,7 +48,7 @@ export class ServicesService {
           }
         : {}),
       ...(status ? { status } : {}),
-      ...(topicId ? { topics: { some: { topicId } } } : {}),
+      ...(allTopicIds.length ? { topics: { some: { topicId: { in: allTopicIds } } } } : {}),
       ...(search
         ? {
             OR: [

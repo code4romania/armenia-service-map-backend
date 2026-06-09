@@ -8,7 +8,7 @@ import { startOfArmeniaDay, withAvailabilityState } from '../../common/availabil
 export class SearchServicesUseCase {
   constructor(private readonly servicesService: ServicesService) {}
   async execute(
-    query: PaginationQuery & { search?: string; regionId?: string; topicId?: string; isAvailable?: boolean },
+    query: PaginationQuery & { search?: string; regionId?: string; topicId?: string; topicIds?: string[]; isAvailable?: boolean },
   ) {
     const { isAvailable, ...rest } = query;
     const now = new Date();

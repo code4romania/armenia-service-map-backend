@@ -84,6 +84,54 @@ describe('ServicesService', () => {
     expect(callArg.where.AND).toBeUndefined();
   });
 
+  it('filters by a union of topic ids when topicIds is provided', async () => {
+    const findMany = jest.fn().mockResolvedValue([]);
+    const count = jest.fn().mockResolvedValue(0);
+    const prisma = { service: { findMany, count } };
+    const service = new ServicesService(prisma as never, new DomainExceptionService());
+
+    await service.findMany({ topicIds: ['parent-id', 'child-id'] });
+
+    const where = findMany.mock.calls[0][0].where;
+    expect(where.topics).toEqual({ some: { topicId: { in: ['parent-id', 'child-id'] } } });
+  });
+
+  it('still filters by a single topicId for back-compat', async () => {
+    const findMany = jest.fn().mockResolvedValue([]);
+    const count = jest.fn().mockResolvedValue(0);
+    const prisma = { service: { findMany, count } };
+    const service = new ServicesService(prisma as never, new DomainExceptionService());
+
+    await service.findMany({ topicId: 'solo-id' });
+
+    const where = findMany.mock.calls[0][0].where;
+    expect(where.topics).toEqual({ some: { topicId: { in: ['solo-id'] } } });
+  });
+
+  it('merges topicId and topicIds into one union', async () => {
+    const findMany = jest.fn().mockResolvedValue([]);
+    const count = jest.fn().mockResolvedValue(0);
+    const prisma = { service: { findMany, count } };
+    const service = new ServicesService(prisma as never, new DomainExceptionService());
+
+    await service.findMany({ topicId: 'parent-id', topicIds: ['child-id'] });
+
+    const where = findMany.mock.calls[0][0].where;
+    expect(where.topics.some.topicId.in).toEqual(expect.arrayContaining(['parent-id', 'child-id']));
+    expect(where.topics.some.topicId.in).toHaveLength(2);
+  });
+
+  it('omits the topic filter entirely when no topic ids are given', async () => {
+    const findMany = jest.fn().mockResolvedValue([]);
+    const count = jest.fn().mockResolvedValue(0);
+    const prisma = { service: { findMany, count } };
+    const service = new ServicesService(prisma as never, new DomainExceptionService());
+
+    await service.findMany({});
+
+    expect(findMany.mock.calls[0][0].where.topics).toBeUndefined();
+  });
+
   it('creates a service with an external organisation name and null organisationId', async () => {
     const create = jest.fn().mockResolvedValue({ id: 's1' });
     const prisma = { service: { create } };
