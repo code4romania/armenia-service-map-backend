@@ -48,9 +48,9 @@ export class NotifyMatchingSubscribersUseCase {
       await Promise.all(
         [...bySubscriber.values()].map((subscriber) => {
           const locale = (subscriber.locale === 'hy' ? 'hy' : 'en') as SubscriptionLocale;
-          const serviceTitle = locale === 'hy' && service.titleHy ? service.titleHy : service.title;
+          const serviceTitle = (locale === 'hy' && service.titleHy ? service.titleHy : service.title) ?? '';
           const serviceShortDescription =
-            locale === 'hy' && service.shortDescriptionHy ? service.shortDescriptionHy : service.shortDescription;
+            (locale === 'hy' && service.shortDescriptionHy ? service.shortDescriptionHy : service.shortDescription) ?? '';
           return this.email
             .sendNewServiceNotification({
               to: subscriber.email,
