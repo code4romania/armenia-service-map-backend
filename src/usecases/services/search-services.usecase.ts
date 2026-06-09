@@ -14,6 +14,9 @@ export class SearchServicesUseCase {
     const now = new Date();
     const result = await this.servicesService.findMany({
       ...rest,
+      // Public directory defaults to newest-first (no public sort UI overrides this).
+      sortBy: rest.sortBy ?? 'updatedAt',
+      sortOrder: rest.sortBy ? rest.sortOrder : 'desc',
       status: ServiceStatus.PUBLISHED,
       ...(isAvailable ? { availableOn: startOfArmeniaDay(now) } : {}),
     });
