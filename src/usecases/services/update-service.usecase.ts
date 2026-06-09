@@ -19,6 +19,8 @@ export class UpdateServiceUseCase {
     descriptionHy?: string;
     howToAccess?: string;
     howToAccessHy?: string;
+    organisationId?: string;
+    externalOrganisationName?: string;
     regionId?: string;
     isAvailable?: boolean;
     status?: ServiceStatus;

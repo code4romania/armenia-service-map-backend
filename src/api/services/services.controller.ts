@@ -2,7 +2,7 @@ import { Controller, Get, Post, Patch, Delete, Body, Param, Query } from '@nestj
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { Role } from '../../common/enums/role.enum.js';
 import { CreateServiceDto } from './dto/create-service.dto.js';
-import { UpdateServiceDto } from './dto/update-service.dto.js';
+import { AdminUpdateServiceDto } from './dto/admin-update-service.dto.js';
 import { ServiceQueryDto } from './dto/service-query.dto.js';
 import { GetManyServicesUseCase } from '../../usecases/services/get-many-services.usecase.js';
 import { GetOneServiceUseCase } from '../../usecases/services/get-one-service.usecase.js';
@@ -45,7 +45,7 @@ export class ServicesController {
   }
 
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() dto: UpdateServiceDto) {
+  async update(@Param('id') id: string, @Body() dto: AdminUpdateServiceDto) {
     return this.updateService.execute(id, {
       ...dto,
       availabilityStart: dto.availabilityStart ? new Date(dto.availabilityStart) : undefined,

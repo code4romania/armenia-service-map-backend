@@ -30,8 +30,13 @@ export class CreateServiceDto {
   @IsString()
   howToAccessHy?: string;
 
+  @IsOptional()
   @IsUUID()
-  organisationId: string;
+  organisationId?: string;
+
+  @IsOptional()
+  @IsString()
+  externalOrganisationName?: string;
 
   @IsOptional()
   @IsUUID()

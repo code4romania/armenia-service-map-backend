@@ -19,7 +19,8 @@ export class CreateServiceUseCase {
     descriptionHy?: string;
     howToAccess: string;
     howToAccessHy?: string;
-    organisationId: string;
+    organisationId?: string;
+    externalOrganisationName?: string;
     regionId?: string;
     isAvailable?: boolean;
     status?: ServiceStatus;
