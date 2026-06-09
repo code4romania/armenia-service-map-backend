@@ -168,13 +168,13 @@ model Topic {
 
 model Service {
   id                String        @id @default(uuid())
-  title             String
+  title             String?
   titleHy           String?       @map("title_hy")
-  shortDescription  String        @map("short_description")
+  shortDescription  String?       @map("short_description")
   shortDescriptionHy String?      @map("short_description_hy")
-  description       String
+  description       String?
   descriptionHy     String?       @map("description_hy")
-  howToAccess       String        @default("") @map("how_to_access")
+  howToAccess       String?       @map("how_to_access")
   howToAccessHy     String?       @map("how_to_access_hy")
   organisationId           String?       @map("organisation_id")
   externalOrganisationName String?       @map("external_organisation_name")
