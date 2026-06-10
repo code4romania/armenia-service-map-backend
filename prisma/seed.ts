@@ -17,6 +17,8 @@ const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
+  await prisma.subscription.deleteMany();
+  await prisma.subscriber.deleteMany();
   await prisma.notification.deleteMany();
   await prisma.needReportEvent.deleteMany();
   await prisma.searchLog.deleteMany();
@@ -348,11 +350,35 @@ async function main() {
   ]);
   const targetGroupByName = new Map(createdTargetGroups.map((group) => [group.name, group]));
 
-  const servicesSeed = [
+  type ServiceSeed = {
+    title: string;
+    titleHy: string;
+    shortDescription: string;
+    shortDescriptionHy: string;
+    description: string;
+    descriptionHy: string;
+    howToAccess: string;
+    howToAccessHy: string;
+    // Exactly one of organisationKey (in-network) or externalOrganisationName (outside the network).
+    organisationKey?: string;
+    externalOrganisationName?: string;
+    regionSlug: string;
+    status: ServiceStatus;
+    isAvailable: boolean;
+    topicSlugs: string[];
+    targetGroups: string[];
+  };
+
+  const servicesSeed: ServiceSeed[] = [
     {
       title: 'Legal Documentation Support Desk',
+      titleHy: 'Իրավական փաստաթղթերի աջակցության կետ',
       shortDescription: 'Weekly legal orientation sessions for displaced families on residency and documentation.',
+      shortDescriptionHy: 'Շաբաթական իրավական խորհրդատվություն տեղահանված ընտանիքների համար՝ բնակության և փաստաթղթերի հարցերով։',
       description: 'Individual consultations for legal status, document renewal, and referral to legal aid lawyers.',
+      descriptionHy: 'Անհատական խորհրդատվություն իրավական կարգավիճակի, փաստաթղթերի թարմացման և իրավաբանների ուղղորդման համար։',
+      howToAccess: 'Visit the desk in person on weekdays or call the contact number to book an appointment.',
+      howToAccessHy: 'Այցելեք կետ աշխատանքային օրերին կամ զանգահարեք՝ հանդիպում ամրագրելու համար։',
       organisationKey: 'mission-armenia',
       regionSlug: 'yerevan',
       status: ServiceStatus.PUBLISHED,
@@ -362,8 +388,13 @@ async function main() {
     },
     {
       title: 'Psychosocial Group Counseling',
+      titleHy: 'Հոգեսոցիալական խմբային խորհրդատվություն',
       shortDescription: 'Structured psychosocial group sessions led by trained counselors.',
+      shortDescriptionHy: 'Կառուցվածքային հոգեսոցիալական խմբային հանդիպումներ՝ վերապատրաստված խորհրդատուների ղեկավարությամբ։',
       description: 'Group and individual counseling focused on trauma, stress regulation, and social connection.',
+      descriptionHy: 'Խմբային և անհատական խորհրդատվություն՝ ուղղված տրավմայի, սթրեսի կարգավորման և սոցիալական կապի վերականգնմանը։',
+      howToAccess: 'Register by phone or email; new groups start at the beginning of each month.',
+      howToAccessHy: 'Գրանցվեք հեռախոսով կամ էլ. փոստով. նոր խմբերը մեկնարկում են ամսվա սկզբին։',
       organisationKey: 'armenian-caritas',
       regionSlug: 'shirak',
       status: ServiceStatus.PUBLISHED,
@@ -373,8 +404,13 @@ async function main() {
     },
     {
       title: 'Emergency Rental Assistance',
+      titleHy: 'Վարձակալության շտապ աջակցություն',
       shortDescription: 'Short-term rental support for newly arrived displaced households.',
+      shortDescriptionHy: 'Կարճաժամկետ վարձակալության աջակցություն նորեկ տեղահանված ընտանիքների համար։',
       description: 'Covers temporary rent and landlord mediation while families stabilize and access services.',
+      descriptionHy: 'Ծածկում է ժամանակավոր վարձը և տանտիրոջ հետ միջնորդությունը՝ մինչ ընտանիքների կայունացումը։',
+      howToAccess: 'Apply through a caseworker after an initial needs assessment.',
+      howToAccessHy: 'Դիմեք սոցիալական աշխատողի միջոցով՝ կարիքների գնահատումից հետո։',
       organisationKey: 'people-in-need',
       regionSlug: 'lori',
       status: ServiceStatus.PUBLISHED,
@@ -384,8 +420,13 @@ async function main() {
     },
     {
       title: 'Assistive Devices Referral and Follow-up',
+      titleHy: 'Օժանդակ սարքերի ուղղորդում և հետագա հսկողություն',
       shortDescription: 'Assessment and referral pathway for assistive devices and rehabilitation support.',
+      shortDescriptionHy: 'Գնահատման և ուղղորդման ծառայություն՝ օժանդակ սարքերի և վերականգնողական աջակցության համար։',
       description: 'Initial screening, specialist referral, and follow-up for wheelchair, hearing, and mobility support.',
+      descriptionHy: 'Սկզբնական զննում, մասնագետի ուղղորդում և հետագա հսկողություն՝ սայլակների, լսողության և շարժունակության աջակցության համար։',
+      howToAccess: 'Request an assessment by phone; home visits can be arranged on a case-by-case basis.',
+      howToAccessHy: 'Հայցեք գնահատում հեռախոսով. տնային այցերը կազմակերպվում են ըստ անհրաժեշտության։',
       organisationKey: 'full-life',
       regionSlug: 'kotayk',
       status: ServiceStatus.PUBLISHED,
@@ -395,8 +436,13 @@ async function main() {
     },
     {
       title: 'Job Readiness Workshops',
+      titleHy: 'Աշխատանքի պատրաստության դասընթացներ',
       shortDescription: 'CV building, interview prep, and job matching support for displaced adults.',
+      shortDescriptionHy: 'Ինքնակենսագրականի կազմում, հարցազրույցի նախապատրաստում և աշխատանքի համապատասխանեցում տեղահանված մեծահասակների համար։',
       description: 'Weekly cohort sessions with one-on-one coaching and referral to local employers.',
+      descriptionHy: 'Շաբաթական խմբային դասընթացներ՝ անհատական մենթորությամբ և տեղական գործատուների ուղղորդմամբ։',
+      howToAccess: 'Sign up for the next cohort by email or at the local office.',
+      howToAccessHy: 'Գրանցվեք հաջորդ խմբի համար էլ. փոստով կամ տեղական գրասենյակում։',
       organisationKey: 'people-in-need',
       regionSlug: 'lori',
       status: ServiceStatus.PUBLISHED,
@@ -406,8 +452,13 @@ async function main() {
     },
     {
       title: 'Community Orientation for New Arrivals',
+      titleHy: 'Համայնքային կողմնորոշում նորեկների համար',
       shortDescription: 'Practical orientation on local services, schools, and health registration.',
+      shortDescriptionHy: 'Գործնական կողմնորոշում տեղական ծառայությունների, դպրոցների և առողջապահական գրանցման վերաբերյալ։',
       description: 'Facilitated orientation sessions with translation support for recently displaced families.',
+      descriptionHy: 'Ուղեկցվող կողմնորոշման հանդիպումներ՝ թարգմանչական աջակցությամբ վերջերս տեղահանված ընտանիքների համար։',
+      howToAccess: 'Join a weekly session; no appointment needed, walk-ins welcome.',
+      howToAccessHy: 'Միացեք շաբաթական հանդիպմանը. նախնական գրանցում չի պահանջվում։',
       organisationKey: 'mission-armenia',
       regionSlug: 'yerevan',
       status: ServiceStatus.PUBLISHED,
@@ -415,16 +466,67 @@ async function main() {
       topicSlugs: ['community-integration', 'case-management'],
       targetGroups: ['Children', 'Women'],
     },
+    // --- Outside-the-network providers: named via externalOrganisationName, no linked Organisation ---
+    {
+      title: 'Primary Healthcare Mobile Clinic',
+      titleHy: 'Առաջնային բուժօգնության շարժական կլինիկա',
+      shortDescription: 'Mobile clinic offering basic health checks and medication for remote communities.',
+      shortDescriptionHy: 'Շարժական կլինիկա՝ հիմնական առողջական ստուգումներով և դեղորայքով հեռավոր համայնքների համար։',
+      description: 'Scheduled mobile visits providing primary consultations, vaccinations, and referrals.',
+      descriptionHy: 'Պլանավորված շարժական այցեր՝ առաջնային խորհրդատվությամբ, պատվաստումներով և ուղղորդումներով։',
+      howToAccess: 'Check the published visit schedule for your community; services are free of charge.',
+      howToAccessHy: 'Ստուգեք ձեր համայնքի այցերի ժամանակացույցը. ծառայություններն անվճար են։',
+      externalOrganisationName: 'UNHCR Armenia',
+      regionSlug: 'gegharkunik',
+      status: ServiceStatus.PUBLISHED,
+      isAvailable: true,
+      topicSlugs: ['healthcare'],
+      targetGroups: ['Older Persons', 'Children'],
+    },
+    {
+      title: 'First Aid and Hygiene Distribution',
+      titleHy: 'Առաջին օգնություն և հիգիենայի պարագաների բաշխում',
+      shortDescription: 'Distribution of first-aid and hygiene kits with basic safety training.',
+      shortDescriptionHy: 'Առաջին օգնության և հիգիենայի փաթեթների բաշխում՝ անվտանգության հիմնական ուսուցմամբ։',
+      description: 'Regular distribution points provide essential supplies and short first-aid sessions.',
+      descriptionHy: 'Կանոնավոր բաշխման կետերն ապահովում են անհրաժեշտ պարագաներ և կարճ առաջին օգնության դասընթացներ։',
+      howToAccess: 'Visit a distribution point during opening hours with an ID document.',
+      howToAccessHy: 'Այցելեք բաշխման կետ աշխատանքային ժամերին՝ անձը հաստատող փաստաթղթով։',
+      externalOrganisationName: 'Armenian Red Cross Society',
+      regionSlug: 'syunik',
+      status: ServiceStatus.PUBLISHED,
+      isAvailable: true,
+      topicSlugs: ['social-services'],
+      targetGroups: ['Women', 'Children'],
+    },
   ];
 
   const createdServices: Awaited<ReturnType<typeof prisma.service.create>>[] = [];
   for (const service of servicesSeed) {
+    // Enforce the organisation XOR invariant (mirrors ServicesService.assertOrganisationXor):
+    // exactly one of an in-network organisation or an external organisation name.
+    const hasOrg = Boolean(service.organisationKey);
+    const hasExternal = Boolean(service.externalOrganisationName?.trim());
+    if (hasOrg === hasExternal) {
+      throw new Error(
+        `Service "${service.title}" must have exactly one of organisationKey or externalOrganisationName`,
+      );
+    }
+
     const createdService = await prisma.service.create({
       data: {
         title: service.title,
+        titleHy: service.titleHy,
         shortDescription: service.shortDescription,
+        shortDescriptionHy: service.shortDescriptionHy,
         description: service.description,
-        organisationId: getOrganisation(service.organisationKey).id,
+        descriptionHy: service.descriptionHy,
+        howToAccess: service.howToAccess,
+        howToAccessHy: service.howToAccessHy,
+        organisationId: service.organisationKey
+          ? getOrganisation(service.organisationKey).id
+          : null,
+        externalOrganisationName: service.externalOrganisationName ?? null,
         regionId: getRegion(service.regionSlug).id,
         status: service.status,
         isAvailable: service.isAvailable,
@@ -584,6 +686,46 @@ async function main() {
       },
     ],
   });
+
+  const subscribersSeed = [
+    {
+      email: 'subscriber.hy@example.com',
+      locale: 'hy',
+      unsubscribeToken: 'seed-unsub-token-hy-001',
+      subscriptions: [
+        { regionSlug: 'yerevan', topicSlug: 'legal-services' },
+        { regionSlug: 'yerevan', topicSlug: null },
+      ],
+    },
+    {
+      email: 'subscriber.en@example.com',
+      locale: 'en',
+      unsubscribeToken: 'seed-unsub-token-en-002',
+      subscriptions: [{ regionSlug: 'lori', topicSlug: 'employment' }],
+    },
+    {
+      email: 'subscriber.topic-only@example.com',
+      locale: 'hy',
+      unsubscribeToken: 'seed-unsub-token-hy-003',
+      subscriptions: [{ regionSlug: null, topicSlug: 'healthcare' }],
+    },
+  ];
+
+  for (const subscriber of subscribersSeed) {
+    await prisma.subscriber.create({
+      data: {
+        email: subscriber.email,
+        locale: subscriber.locale,
+        unsubscribeToken: subscriber.unsubscribeToken,
+        subscriptions: {
+          create: subscriber.subscriptions.map((subscription) => ({
+            regionId: subscription.regionSlug ? getRegion(subscription.regionSlug).id : null,
+            topicId: subscription.topicSlug ? topicBySlug.get(subscription.topicSlug)!.id : null,
+          })),
+        },
+      },
+    });
+  }
 
   console.log('Seed completed with realistic Armenia-focused NGOs, services, needs, and activity data');
 }
