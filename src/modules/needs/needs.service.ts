@@ -29,13 +29,28 @@ export class NeedsService {
     regionId?: string;
     assignedOrganisationId?: string;
     tagId?: string;
+    tagIds?: string[];
+    startDate?: string;
+    endDate?: string;
   }) {
-    const { page = 1, perPage = 10, sortBy = 'createdAt', sortOrder = 'desc', search, status, regionId, assignedOrganisationId, tagId } = query;
+    const { page = 1, perPage = 10, sortBy = 'createdAt', sortOrder = 'desc', search, status, regionId, assignedOrganisationId, tagId, tagIds, startDate, endDate } = query;
+    const tagFilter = tagIds && tagIds.length > 0 ? tagIds : tagId ? [tagId] : undefined;
+
+    const createdAt: { gte?: Date; lt?: Date } = {};
+    if (startDate) createdAt.gte = new Date(startDate);
+    if (endDate) {
+      // End date is inclusive: match everything before the start of the next UTC day.
+      const end = new Date(endDate);
+      end.setUTCDate(end.getUTCDate() + 1);
+      createdAt.lt = end;
+    }
+
     const where = {
       ...(status ? { status } : {}),
       ...(regionId ? { regionId } : {}),
       ...(assignedOrganisationId ? { assignedOrganisationId } : {}),
-      ...(tagId ? { tags: { some: { needTagId: tagId } } } : {}),
+      ...(tagFilter ? { tags: { some: { needTagId: { in: tagFilter } } } } : {}),
+      ...(createdAt.gte || createdAt.lt ? { createdAt } : {}),
       ...(search
         ? {
             OR: [

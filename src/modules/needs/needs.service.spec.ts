@@ -30,4 +30,24 @@ describe('NeedsService', () => {
       }),
     );
   });
+
+  it('filters findMany by submission date range (end inclusive) and multiple tags', async () => {
+    const findMany = jest.fn().mockResolvedValue([]);
+    const count = jest.fn().mockResolvedValue(0);
+    const prisma = { needReport: { findMany, count } };
+    const service = new NeedsService(prisma as never, new DomainExceptionService(), {} as never);
+
+    await service.findMany({
+      startDate: '2026-06-01',
+      endDate: '2026-06-10',
+      tagIds: ['tag-a', 'tag-b'],
+    });
+
+    const where = findMany.mock.calls[0][0].where;
+    expect(where.createdAt.gte).toEqual(new Date('2026-06-01'));
+    // end is inclusive: strictly before the start of the following day (UTC)
+    expect(where.createdAt.lt).toEqual(new Date('2026-06-11'));
+    expect(where.tags).toEqual({ some: { needTagId: { in: ['tag-a', 'tag-b'] } } });
+    expect(count).toHaveBeenCalledWith({ where });
+  });
 });
