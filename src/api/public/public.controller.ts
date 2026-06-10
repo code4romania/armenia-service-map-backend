@@ -23,6 +23,7 @@ import { LogPublicSearchBatchDto } from './dto/log-public-search-batch.dto.js';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto.js';
 import { UnsubscribeDto } from './dto/unsubscribe.dto.js';
 import { EntityStatus } from '../../common/enums/entity-status.enum.js';
+import { ServiceStatus } from '../../common/enums/service-status.enum.js';
 import { withAvailabilityState } from '../../common/availability/availability-state.js';
 
 @Controller('public')
@@ -49,7 +50,14 @@ export class PublicController {
   @Get('regions/service-counts')
   async regionServiceCounts() {
     const regions = await this.prisma.region.findMany({
-      select: { svgPathId: true, _count: { select: { services: true } } },
+      select: {
+        svgPathId: true,
+        _count: {
+          // Only PUBLISHED services are visible publicly, so the map counter
+          // must exclude DRAFT services (matches SearchServicesUseCase).
+          select: { services: { where: { status: ServiceStatus.PUBLISHED } } },
+        },
+      },
     });
     return Object.fromEntries(
       regions.map((r) => [r.svgPathId, r._count.services]),

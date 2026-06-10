@@ -1,5 +1,6 @@
 import { NotFoundException } from '@nestjs/common';
 import { PublicController } from './public.controller';
+import { ServiceStatus } from '../../common/enums/service-status.enum.js';
 
 function makeController(getOneResult: unknown) {
   const getOneService = { execute: jest.fn().mockResolvedValue(getOneResult) };
@@ -15,6 +16,22 @@ function makeController(getOneResult: unknown) {
     null as never,
   );
   return { controller, getOneService };
+}
+
+function makeControllerWithPrisma(regions: unknown[]) {
+  const findMany = jest.fn().mockResolvedValue(regions);
+  const prisma = { region: { findMany } };
+  const controller = new PublicController(
+    prisma as never,
+    null as never,
+    null as never,
+    null as never,
+    null as never,
+    null as never,
+    null as never,
+    null as never,
+  );
+  return { controller, findMany };
 }
 
 describe('PublicController.getService', () => {
@@ -51,5 +68,27 @@ describe('PublicController.getService', () => {
     const { controller } = makeController({ id: 's1', status: 'DRAFT' });
 
     await expect(controller.getService('s1')).rejects.toBeInstanceOf(NotFoundException);
+  });
+});
+
+describe('PublicController.regionServiceCounts', () => {
+  it('counts only PUBLISHED services per region', async () => {
+    const { controller, findMany } = makeControllerWithPrisma([
+      { svgPathId: 'AM-ER', _count: { services: 2 } },
+    ]);
+
+    const result = await controller.regionServiceCounts();
+
+    expect(result).toEqual({ 'AM-ER': 2 });
+    expect(findMany).toHaveBeenCalledWith({
+      select: {
+        svgPathId: true,
+        _count: {
+          select: {
+            services: { where: { status: ServiceStatus.PUBLISHED } },
+          },
+        },
+      },
+    });
   });
 });
