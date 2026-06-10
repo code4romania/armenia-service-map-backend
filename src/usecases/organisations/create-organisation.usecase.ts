@@ -3,7 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service.js';
-import { EmailService } from '../../modules/email/email.service.js';
+import { EmailService } from '../../infrastructure/email/email.service.js';
 import { Role } from '../../common/enums/role.enum.js';
 import { OrganisationStatus } from '../../common/enums/organisation-status.enum.js';
 import { UserStatus } from '../../common/enums/user-status.enum.js';

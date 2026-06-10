@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service.js';
 import { OrganisationStatus } from '../../common/enums/organisation-status.enum.js';
 import { DomainExceptionService } from '../../infrastructure/exceptions/domain-exception.service.js';
-import { EmailService } from '../../modules/email/email.service.js';
+import { EmailService } from '../../infrastructure/email/email.service.js';
 import { NotificationsService } from '../../modules/notifications/notifications.service.js';
 import { Role } from '../../common/enums/role.enum.js';
 import { NotificationType } from '../../common/enums/notification-type.enum.js';

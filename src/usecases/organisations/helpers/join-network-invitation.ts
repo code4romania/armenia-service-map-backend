@@ -1,6 +1,6 @@
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { EmailService } from '../../../modules/email/email.service.js';
+import { EmailService } from '../../../infrastructure/email/email.service.js';
 
 export function splitContactName(contactName?: string | null) {
   const normalized = (contactName ?? '').trim().replace(/\s+/g, ' ');

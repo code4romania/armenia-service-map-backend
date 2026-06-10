@@ -2,8 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service.js';
 import { SubscriptionsService } from '../../modules/subscriptions/subscriptions.service.js';
-import { EmailService } from '../../modules/email/email.service.js';
-import { SubscriptionLocale } from '../../modules/email/templates/subscription-confirmation.template.js';
+import { EmailService } from '../../infrastructure/email/email.service.js';
+import { SubscriptionLocale } from '../../infrastructure/email/templates/subscription-confirmation.template.js';
 
 @Injectable()
 export class NotifyMatchingSubscribersUseCase {

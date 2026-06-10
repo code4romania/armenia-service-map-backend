@@ -8,7 +8,7 @@ import { PaginationQuery } from '../../common/interfaces/pagination.interface.js
 import { paginatedResult } from '../../infrastructure/base/base-crud.service.js';
 import { Role } from '../../common/enums/role.enum.js';
 import { UserStatus } from '../../common/enums/user-status.enum.js';
-import { EmailService } from '../email/email.service.js';
+import { EmailService } from '../../infrastructure/email/email.service.js';
 
 // Fields to never return to API
 const userSelect = {

@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import nodemailer, { Transporter } from 'nodemailer';
+import nodemailer from 'nodemailer';
+import { ServerClient } from 'postmark';
+import { MailMessage, MailTransport, PostmarkTransport } from './postmark.transport.js';
 import { renderInvitationTemplate, InvitationTemplateInput } from './templates/invitation.template.js';
 import { renderResetPasswordTemplate } from './templates/reset-password.template.js';
 import { renderSubscriptionConfirmationTemplate, SubscriptionLocale } from './templates/subscription-confirmation.template.js';
@@ -12,11 +14,26 @@ type EmailRuntimeConfig = {
   host: string;
   port: number;
   from: string;
+  postmarkServerToken?: string;
+  postmarkMessageStream?: string;
 };
+
+/** Adapts nodemailer's SMTP transport to the {@link MailTransport} seam. */
+class SmtpTransport implements MailTransport {
+  private readonly transporter: ReturnType<typeof nodemailer.createTransport>;
+
+  constructor(host: string, port: number) {
+    this.transporter = nodemailer.createTransport({ host, port, secure: false });
+  }
+
+  async sendMail(message: MailMessage): Promise<unknown> {
+    return this.transporter.sendMail(message);
+  }
+}
 
 @Injectable()
 export class EmailService {
-  private readonly transport: Transporter;
+  private readonly transport: MailTransport;
   private readonly fromAddress: string;
 
   constructor(configOrRuntime: ConfigService | EmailRuntimeConfig) {
@@ -26,15 +43,18 @@ export class EmailService {
             host: configOrRuntime.get<string>('MAIL_HOST', 'localhost'),
             port: configOrRuntime.get<number>('MAIL_PORT', 1025),
             from: configOrRuntime.getOrThrow<string>('MAIL_FROM'),
+            postmarkServerToken: configOrRuntime.get<string>('POSTMARK_SERVER_TOKEN'),
+            postmarkMessageStream: configOrRuntime.get<string>('POSTMARK_MESSAGE_STREAM', 'outbound'),
           }
         : configOrRuntime;
 
     this.fromAddress = runtime.from;
-    this.transport = nodemailer.createTransport({
-      host: runtime.host,
-      port: runtime.port,
-      secure: false,
-    });
+    this.transport = runtime.postmarkServerToken
+      ? new PostmarkTransport(
+          new ServerClient(runtime.postmarkServerToken),
+          runtime.postmarkMessageStream ?? 'outbound',
+        )
+      : new SmtpTransport(runtime.host, runtime.port);
   }
 
   renderInvitation(input: InvitationTemplateInput): string {

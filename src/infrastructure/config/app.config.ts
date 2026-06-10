@@ -1,5 +1,5 @@
 import { plainToInstance, Type } from 'class-transformer';
-import { IsNumber, IsString, validateSync } from 'class-validator';
+import { IsNumber, IsOptional, IsString, validateSync } from 'class-validator';
 
 export class AppConfig {
   @IsNumber()
@@ -59,6 +59,16 @@ export class AppConfig {
 
   @IsString()
   MAIL_FROM: string;
+
+  // When set, transactional/notification email is delivered via Postmark
+  // instead of the local SMTP (mailcatcher) transport.
+  @IsOptional()
+  @IsString()
+  POSTMARK_SERVER_TOKEN?: string;
+
+  @IsOptional()
+  @IsString()
+  POSTMARK_MESSAGE_STREAM: string = 'outbound';
 }
 
 export function validate(config: Record<string, unknown>) {

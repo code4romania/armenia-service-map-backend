@@ -4,7 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service.js';
 import { DomainExceptionService } from '../../infrastructure/exceptions/domain-exception.service.js';
-import { EmailService } from '../../modules/email/email.service.js';
+import { EmailService } from '../../infrastructure/email/email.service.js';
 import { NotificationsService } from '../../modules/notifications/notifications.service.js';
 import { OrganisationStatus } from '../../common/enums/organisation-status.enum.js';
 import { Role } from '../../common/enums/role.enum.js';

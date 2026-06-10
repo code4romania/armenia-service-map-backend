@@ -7,7 +7,6 @@ import { NeedsModule } from '../modules/needs/needs.module.js';
 import { AnalyticsModule } from '../modules/analytics/analytics.module.js';
 import { UploadModule } from '../modules/upload/upload.module.js';
 import { NotificationsModule } from '../modules/notifications/notifications.module.js';
-import { EmailModule } from '../modules/email/email.module.js';
 import { AuthModule } from '../modules/auth/auth.module.js';
 import { SubscriptionsModule } from '../modules/subscriptions/subscriptions.module.js';
 // Taxonomy
@@ -192,7 +191,7 @@ const subscriptionUseCases = [
 ];
 
 @Module({
-  imports: [TaxonomyModule, OrganisationsModule, UsersModule, ServicesModule, NeedsModule, AnalyticsModule, UploadModule, NotificationsModule, EmailModule, AuthModule, SubscriptionsModule],
+  imports: [TaxonomyModule, OrganisationsModule, UsersModule, ServicesModule, NeedsModule, AnalyticsModule, UploadModule, NotificationsModule, AuthModule, SubscriptionsModule],
   providers: [...taxonomyUseCases, ...organisationUseCases, ...userUseCases, ...serviceUseCases, ...needUseCases, ...analyticsUseCases, ...uploadUseCases, ...notificationUseCases, ...subscriptionUseCases],
   exports: [...taxonomyUseCases, ...organisationUseCases, ...userUseCases, ...serviceUseCases, ...needUseCases, ...analyticsUseCases, ...uploadUseCases, ...notificationUseCases, ...subscriptionUseCases],
 })

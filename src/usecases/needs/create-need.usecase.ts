@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { NeedsService } from '../../modules/needs/needs.service.js';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service.js';
 import { NotificationsService } from '../../modules/notifications/notifications.service.js';
-import { EmailService } from '../../modules/email/email.service.js';
+import { EmailService } from '../../infrastructure/email/email.service.js';
 import { Role } from '../../common/enums/role.enum.js';
 import { NotificationType } from '../../common/enums/notification-type.enum.js';
 
