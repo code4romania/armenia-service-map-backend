@@ -383,7 +383,7 @@ export class AnalyticsService {
         COUNT(*)::int AS count
       FROM need_reports
       WHERE assigned_organisation_id = ${organisationId}
-        AND created_at >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '${months - 1} months'
+        AND created_at >= DATE_TRUNC('month', CURRENT_DATE) - make_interval(months => ${months - 1})
       GROUP BY 1
       ORDER BY 1 ASC
     `;
@@ -400,7 +400,7 @@ export class AnalyticsService {
         COUNT(*)::int AS count
       FROM services
       WHERE organisation_id = ${organisationId}
-        AND created_at >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '${months - 1} months'
+        AND created_at >= DATE_TRUNC('month', CURRENT_DATE) - make_interval(months => ${months - 1})
       GROUP BY 1
       ORDER BY 1 ASC
     `;
