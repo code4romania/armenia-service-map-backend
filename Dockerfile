@@ -14,7 +14,6 @@ COPY src ./src
 RUN set -ex; \
     npm run build
 
-
 RUN set -ex; \
     npm ci --omit=dev --no-audit
 
