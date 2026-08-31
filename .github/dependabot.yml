@@ -13,3 +13,7 @@ updates:
       interval: "weekly"
     versioning-strategy: increase
     open-pull-requests-limit: 20
+    groups:
+      aws-sdk:
+        patterns:
+          - "@aws-sdk/*"
