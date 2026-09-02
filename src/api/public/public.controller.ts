@@ -49,18 +49,21 @@ export class PublicController {
 
   @Get('regions/service-counts')
   async regionServiceCounts() {
-    const regions = await this.prisma.region.findMany({
-      select: {
-        svgPathId: true,
-        _count: {
-          // Only PUBLISHED services are visible publicly, so the map counter
-          // must exclude DRAFT services (matches SearchServicesUseCase).
-          select: { services: { where: { status: ServiceStatus.PUBLISHED } } },
+    // Only PUBLISHED, non-deleted services are visible publicly, so the map counter
+    // must exclude DRAFT and soft-deleted services (matches SearchServicesUseCase).
+    const publicService = { status: ServiceStatus.PUBLISHED, deletedAt: null };
+    const [regions, nationwide] = await Promise.all([
+      this.prisma.region.findMany({
+        select: {
+          svgPathId: true,
+          _count: { select: { services: { where: publicService } } },
         },
-      },
-    });
+      }),
+      // A service with no region is available nationwide, so it counts towards every region.
+      this.prisma.service.count({ where: { regionId: null, ...publicService } }),
+    ]);
     return Object.fromEntries(
-      regions.map((r) => [r.svgPathId, r._count.services]),
+      regions.map((r) => [r.svgPathId, r._count.services + nationwide]),
     );
   }
 
