@@ -18,9 +18,10 @@ function makeController(getOneResult: unknown) {
   return { controller, getOneService };
 }
 
-function makeControllerWithPrisma(regions: unknown[]) {
+function makeControllerWithPrisma(regions: unknown[], nationwideCount = 0) {
   const findMany = jest.fn().mockResolvedValue(regions);
-  const prisma = { region: { findMany } };
+  const serviceCount = jest.fn().mockResolvedValue(nationwideCount);
+  const prisma = { region: { findMany }, service: { count: serviceCount } };
   const controller = new PublicController(
     prisma as never,
     null as never,
@@ -31,7 +32,7 @@ function makeControllerWithPrisma(regions: unknown[]) {
     null as never,
     null as never,
   );
-  return { controller, findMany };
+  return { controller, findMany, serviceCount };
 }
 
 describe('PublicController.getService', () => {
@@ -85,10 +86,27 @@ describe('PublicController.regionServiceCounts', () => {
         svgPathId: true,
         _count: {
           select: {
-            services: { where: { status: ServiceStatus.PUBLISHED } },
+            services: { where: { status: ServiceStatus.PUBLISHED, deletedAt: null } },
           },
         },
       },
+    });
+  });
+
+  it('adds PUBLISHED nationwide (null-region) services to every region count', async () => {
+    const { controller, serviceCount } = makeControllerWithPrisma(
+      [
+        { svgPathId: 'AM-ER', _count: { services: 2 } },
+        { svgPathId: 'AM-SH', _count: { services: 0 } },
+      ],
+      3,
+    );
+
+    const result = await controller.regionServiceCounts();
+
+    expect(result).toEqual({ 'AM-ER': 5, 'AM-SH': 3 });
+    expect(serviceCount).toHaveBeenCalledWith({
+      where: { regionId: null, status: ServiceStatus.PUBLISHED, deletedAt: null },
     });
   });
 });

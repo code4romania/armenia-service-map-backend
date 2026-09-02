@@ -38,3 +38,13 @@ describe('CreateServiceDto language requirements', () => {
     expect(props).toHaveLength(0);
   });
 });
+
+describe('CreateServiceDto regionId', () => {
+  it('accepts regionId: null (service available in all regions)', () => {
+    expect(failedProps({ ...validHy, regionId: null })).toHaveLength(0);
+  });
+
+  it('still rejects a non-UUID regionId', () => {
+    expect(failedProps({ ...validHy, regionId: 'all' })).toContain('regionId');
+  });
+});
