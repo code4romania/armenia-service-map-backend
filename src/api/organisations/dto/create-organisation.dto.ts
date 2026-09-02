@@ -89,9 +89,8 @@ export class CreateOrganisationDto {
   @IsString()
   contactPersonName?: string;
 
-  @IsOptional()
   @IsEmail()
-  contactPersonEmail?: string;
+  contactPersonEmail: string;
 
   @IsOptional()
   @IsString()
