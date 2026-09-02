@@ -14,12 +14,10 @@ function build(overrides: { existingUser?: unknown } = {}) {
   const organisationCreate = jest
     .fn()
     .mockResolvedValue({ id: 'org-1', name: 'Bridge to Hope' });
-  const userCreate = jest
-    .fn()
-    .mockImplementation(async ({ data }) => ({
-      id: `user-${data.email}`,
-      ...data,
-    }));
+  const userCreate = jest.fn().mockImplementation(async ({ data }) => ({
+    id: `user-${data.email}`,
+    ...data,
+  }));
   const userFindUnique = jest
     .fn()
     .mockResolvedValue(overrides.existingUser ?? null);
@@ -118,6 +116,45 @@ describe('CreateOrganisationUseCase', () => {
         organisationName: 'Bridge to Hope',
       }),
     );
+  });
+
+  it('defaults the organisation contact person to the admin when not provided', async () => {
+    const { useCase, organisationCreate } = build();
+
+    await useCase.execute(
+      {
+        name: 'Bridge to Hope',
+        admin: { ...ADMIN, email: 'Mariam@Example.com', phone: '+37477111222' },
+      },
+      'admin-1',
+    );
+
+    expect(organisationCreate.mock.calls[0][0].data).toMatchObject({
+      contactPersonName: 'Mariam Hakobyan',
+      contactPersonEmail: 'mariam@example.com',
+      contactPersonPhone: '+37477111222',
+    });
+  });
+
+  it('keeps explicitly provided contact person details over the admin defaults', async () => {
+    const { useCase, organisationCreate } = build();
+
+    await useCase.execute(
+      {
+        name: 'Bridge to Hope',
+        admin: ADMIN,
+        contactPersonName: 'Front Desk',
+        contactPersonEmail: 'office@example.com',
+        contactPersonPhone: '+37410000000',
+      },
+      'admin-1',
+    );
+
+    expect(organisationCreate.mock.calls[0][0].data).toMatchObject({
+      contactPersonName: 'Front Desk',
+      contactPersonEmail: 'office@example.com',
+      contactPersonPhone: '+37410000000',
+    });
   });
 
   it('rejects when a user with the admin email already exists', async () => {
