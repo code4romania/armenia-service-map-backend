@@ -42,16 +42,12 @@ Required env variables include:
 
 ## Database Workflow (Development)
 
-Apply the current migration set and seed local development data:
+Apply the current migration set and seed data:
 
 ```bash
 npx prisma migrate reset --force
 npx prisma db seed
 ```
-
-The seed (`prisma/seed.ts`) is a development-only tool. It wipes all tables and
-replaces them with fixture data used by local development and e2e tests. It is
-never run automatically and must not be run against staging or production.
 
 ## Cloud Auto Initialization (Optional)
 
@@ -61,14 +57,13 @@ By default, startup DB initialization is enabled. You can disable it with:
 AUTO_DB_INIT=false
 ```
 
-At startup, the backend runs `prisma migrate deploy`. It never seeds.
+At startup, the backend will:
 
-The only data created on a fresh database comes from data migrations:
+1. Run `prisma migrate deploy`
+2. Check `users` table row count
+3. Run `prisma db seed` only when count is `0`
 
-- `20260902100000_add_code4_super_admin`: bootstrap super admin `admin@code4.ro`
-- `20260902110000_seed_regions`: the 11 Armenian regions with their map `svg_path_id`
-
-Topics, target groups and need tags must be created through the admin UI.
+This prevents reseeding on normal restarts once users already exist.
 
 Check migration status:
 
