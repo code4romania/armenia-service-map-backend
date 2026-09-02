@@ -98,6 +98,12 @@ export class CreateOrganisationUseCase {
       const organisation = await tx.organisation.create({
         data: {
           ...orgData,
+          // The org admin doubles as the organisation's contact person unless one was given.
+          contactPersonName:
+            orgData.contactPersonName ??
+            `${orgAdmin.firstName} ${orgAdmin.lastName}`.trim(),
+          contactPersonEmail: orgData.contactPersonEmail ?? adminEmail,
+          contactPersonPhone: orgData.contactPersonPhone ?? orgAdmin.phone,
           tags: orgData.tags ?? [],
           status: OrganisationStatus.ACTIVE,
           submissionSource: 'ADMIN',
