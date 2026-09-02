@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service.js';
+import type { Prisma } from '../../generated/prisma/client.js';
 import { DomainExceptionService } from '../../infrastructure/exceptions/domain-exception.service.js';
 import { PaginationQuery } from '../../common/interfaces/pagination.interface.js';
 import { paginatedResult } from '../../infrastructure/base/base-crud.service.js';
@@ -32,21 +33,26 @@ export class ServicesService {
     const { page = 1, perPage = 10, sortBy = 'title', sortOrder = 'asc', search, organisationId, regionId, topicId, topicIds, isAvailable, status, availableOn } = query;
     // Union of any explicit topic ids plus the legacy single topicId — a service matches if tagged with ANY of them.
     const allTopicIds = [...(topicIds ?? []), ...(topicId ? [topicId] : [])];
+    // Clauses that each need their own OR go under AND so they don't collide with the
+    // free-text search OR below.
+    const andClauses: Prisma.ServiceWhereInput[] = [];
+    if (regionId) {
+      // A service with no region is available nationwide, so it matches every region filter.
+      andClauses.push({ OR: [{ regionId }, { regionId: null }] });
+    }
+    if (availableOn) {
+      andClauses.push(
+        { OR: [{ availabilityStart: null }, { availabilityStart: { lte: availableOn } }] },
+        { OR: [{ availabilityEnd: null }, { availabilityEnd: { gte: availableOn } }] },
+      );
+    }
     const where = {
       deletedAt: null,
       ...(organisationId ? { organisationId } : {}),
-      ...(regionId ? { regionId } : {}),
       ...(isAvailable !== undefined ? { isAvailable } : {}),
       // availableOn forces isAvailable: true; callers pass one or the other, never both.
-      ...(availableOn
-        ? {
-            isAvailable: true,
-            AND: [
-              { OR: [{ availabilityStart: null }, { availabilityStart: { lte: availableOn } }] },
-              { OR: [{ availabilityEnd: null }, { availabilityEnd: { gte: availableOn } }] },
-            ],
-          }
-        : {}),
+      ...(availableOn ? { isAvailable: true } : {}),
+      ...(andClauses.length ? { AND: andClauses } : {}),
       ...(status ? { status } : {}),
       ...(allTopicIds.length ? { topics: { some: { topicId: { in: allTopicIds } } } } : {}),
       ...(search
@@ -97,7 +103,7 @@ export class ServicesService {
     howToAccessHy: string;
     organisationId?: string;
     externalOrganisationName?: string;
-    regionId?: string;
+    regionId?: string | null;
     isAvailable?: boolean;
     status?: ServiceStatus;
     availabilityStart?: Date;
@@ -137,7 +143,7 @@ export class ServicesService {
     howToAccessHy?: string;
     organisationId?: string | null;
     externalOrganisationName?: string | null;
-    regionId?: string;
+    regionId?: string | null;
     isAvailable?: boolean;
     status?: ServiceStatus;
     availabilityStart?: Date | null;

@@ -72,6 +72,37 @@ describe('ServicesService', () => {
     );
   });
 
+  it('includes nationwide (null-region) services when filtering by regionId', async () => {
+    const findMany = jest.fn().mockResolvedValue([]);
+    const count = jest.fn().mockResolvedValue(0);
+    const prisma = { service: { findMany, count } };
+    const service = new ServicesService(prisma as never, new DomainExceptionService());
+
+    await service.findMany({ regionId: 'r1', search: 'food' });
+
+    const where = findMany.mock.calls[0][0].where;
+    expect(where.regionId).toBeUndefined();
+    expect(where.AND).toEqual(
+      expect.arrayContaining([{ OR: [{ regionId: 'r1' }, { regionId: null }] }]),
+    );
+    // The region OR must not clobber the free-text search OR.
+    expect(where.OR).toEqual(expect.arrayContaining([{ title: { contains: 'food', mode: 'insensitive' } }]));
+  });
+
+  it('combines the region clause with the availability clauses under AND', async () => {
+    const findMany = jest.fn().mockResolvedValue([]);
+    const count = jest.fn().mockResolvedValue(0);
+    const prisma = { service: { findMany, count } };
+    const service = new ServicesService(prisma as never, new DomainExceptionService());
+
+    const availableOn = new Date('2026-06-08T00:00:00.000Z');
+    await service.findMany({ regionId: 'r1', availableOn });
+
+    const where = findMany.mock.calls[0][0].where;
+    expect(where.AND).toHaveLength(3);
+    expect(where.AND).toContainEqual({ OR: [{ regionId: 'r1' }, { regionId: null }] });
+  });
+
   it('does not add the availability AND clause when availableOn is absent', async () => {
     const findMany = jest.fn().mockResolvedValue([]);
     const count = jest.fn().mockResolvedValue(0);

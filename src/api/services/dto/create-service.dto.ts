@@ -42,9 +42,10 @@ export class CreateServiceDto {
   @IsString()
   externalOrganisationName?: string;
 
+  /** `null` = available in all regions. */
   @IsOptional()
   @IsUUID()
-  regionId?: string;
+  regionId?: string | null;
 
   @IsOptional()
   @IsBoolean()
