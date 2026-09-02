@@ -13,6 +13,7 @@ describe('RejectOrganisationUseCase', () => {
       region: null,
     });
     const organisationUpdate = jest.fn().mockResolvedValue({
+      regions: [],
       id: 'org-1',
       name: 'Bridge to Hope',
       status: OrganisationStatus.REJECTED,

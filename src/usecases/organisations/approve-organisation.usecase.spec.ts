@@ -15,6 +15,7 @@ describe('ApproveOrganisationUseCase', () => {
     const userFindUnique = jest.fn().mockResolvedValue(null);
     const userFindMany = jest.fn().mockResolvedValue([{ id: 'super-1' }]);
     const organisationUpdate = jest.fn().mockResolvedValue({
+      regions: [],
       id: 'org-1',
       name: 'Bridge to Hope',
       status: OrganisationStatus.ACTIVE,

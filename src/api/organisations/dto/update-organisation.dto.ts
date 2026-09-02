@@ -88,8 +88,9 @@ export class UpdateOrganisationDto {
   tags?: string[];
 
   @IsOptional()
-  @IsUUID()
-  regionId?: string;
+  @IsArray()
+  @IsUUID('4', { each: true })
+  regionIds?: string[];
 
   @IsOptional()
   @IsEnum(OrganisationStatus)

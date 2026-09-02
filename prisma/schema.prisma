@@ -72,7 +72,7 @@ model Region {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  organisations Organisation[]
+  organisationRegions OrganisationRegion[]
   services      Service[]
   needReports   NeedReport[]
   searchLogs    SearchLog[]
@@ -109,17 +109,28 @@ model Organisation {
   reviewedAt         DateTime?          @map("reviewed_at")
   reviewedByUserId   String?            @map("reviewed_by_user_id")
   rejectionReason    String?            @map("rejection_reason")
-  regionId           String?            @map("region_id")
   createdAt          DateTime           @default(now()) @map("created_at")
   updatedAt          DateTime           @updatedAt @map("updated_at")
   deletedAt          DateTime?          @map("deleted_at")
 
-  region              Region?      @relation(fields: [regionId], references: [id])
+  regions             OrganisationRegion[]
   users               User[]
   services            Service[]
   assignedNeedReports NeedReport[]
 
   @@map("organisations")
+}
+
+model OrganisationRegion {
+  organisationId String @map("organisation_id")
+  regionId       String @map("region_id")
+
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  region       Region       @relation(fields: [regionId], references: [id], onDelete: Cascade)
+
+  @@id([organisationId, regionId])
+  @@index([regionId])
+  @@map("organisation_regions")
 }
 
 model User {

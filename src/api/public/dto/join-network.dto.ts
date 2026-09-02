@@ -1,12 +1,13 @@
-import { IsEmail, IsOptional, IsString, IsUUID, MinLength } from 'class-validator';
+import { IsArray, IsEmail, IsOptional, IsString, IsUUID, MinLength } from 'class-validator';
 
 export class JoinNetworkDto {
   @IsString()
   organisationName: string;
 
   @IsOptional()
-  @IsUUID()
-  regionId?: string;
+  @IsArray()
+  @IsUUID('4', { each: true })
+  regionIds?: string[];
 
   @IsString()
   contactName: string;

@@ -6,6 +6,7 @@ import { PrismaService } from '../../infrastructure/prisma/prisma.service.js';
 import { DomainExceptionService } from '../../infrastructure/exceptions/domain-exception.service.js';
 import { EmailService } from '../../infrastructure/email/email.service.js';
 import { NotificationsService } from '../../modules/notifications/notifications.service.js';
+import { flattenRegions, includeOrganisationRegions } from '../../modules/organisations/organisation-regions.js';
 import { OrganisationStatus } from '../../common/enums/organisation-status.enum.js';
 import { Role } from '../../common/enums/role.enum.js';
 import { UserStatus } from '../../common/enums/user-status.enum.js';
@@ -26,7 +27,7 @@ export class ApproveOrganisationUseCase {
   async execute(id: string, reviewerId: string) {
     const organisation = await this.prisma.organisation.findUnique({
       where: { id, deletedAt: null },
-      include: { region: true },
+      include: includeOrganisationRegions,
     });
 
     if (!organisation) {
@@ -61,7 +62,7 @@ export class ApproveOrganisationUseCase {
           rejectionReason: null,
         },
         include: {
-          region: true,
+          ...includeOrganisationRegions,
           users: {
             where: { deletedAt: null },
             select: { id: true, firstName: true, lastName: true, email: true, role: true, createdAt: true },
@@ -117,6 +118,6 @@ export class ApproveOrganisationUseCase {
       },
     );
 
-    return result.updatedOrganisation;
+    return flattenRegions(result.updatedOrganisation);
   }
 }

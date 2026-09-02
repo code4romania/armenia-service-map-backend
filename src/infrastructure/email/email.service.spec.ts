@@ -127,7 +127,7 @@ describe('EmailService admin submission emails', () => {
       contactName: 'Mariam',
       contactEmail: 'mariam@example.com',
       servicesDescription: 'Legal aid and psychosocial support.',
-      regionName: 'Yerevan',
+      regionNames: ['Yerevan', 'Shirak'],
       adminUrl: 'http://x/admin/organisations/org-1',
     });
     const arg = sendMail.mock.calls[0][0];
@@ -136,6 +136,22 @@ describe('EmailService admin submission emails', () => {
     expect(arg.html).toContain('Bridge to Hope');
     expect(arg.html).toContain('Mariam');
     expect(arg.html).toContain('mariam@example.com');
+    expect(arg.html).toContain('Yerevan, Shirak');
     expect(arg.html).toContain('http://x/admin/organisations/org-1');
+  });
+
+  it('omits the regions line from the join-network email when none were selected', async () => {
+    const { service, sendMail } = makeService();
+    await service.sendNewJoinNetworkRequestToAdmin({
+      to: 'admin@b.com',
+      organisationName: 'Bridge to Hope',
+      contactName: 'Mariam',
+      contactEmail: 'mariam@example.com',
+      servicesDescription: 'Legal aid.',
+      regionNames: [],
+      adminUrl: 'http://x/admin/organisations/org-1',
+    });
+    const arg = sendMail.mock.calls[0][0];
+    expect(arg.html).not.toContain('Regions:');
   });
 });

@@ -28,7 +28,7 @@ export class UpdateOrganisationUseCase {
     observations?: string;
     tags?: string[];
     status?: OrganisationStatus;
-    regionId?: string;
+    regionIds?: string[];
   }) {
     return this.organisationsService.update(id, data);
   }

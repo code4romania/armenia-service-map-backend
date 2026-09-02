@@ -6,7 +6,7 @@ export type NewJoinNetworkAdminInput = {
   contactName: string;
   contactEmail: string;
   servicesDescription: string;
-  regionName?: string;
+  regionNames?: string[];
   adminUrl: string;
 };
 
@@ -15,8 +15,9 @@ export function renderNewJoinNetworkAdminTemplate(input: NewJoinNetworkAdminInpu
   html: string;
 } {
   const subject = 'New join-network request submitted';
-  const region = input.regionName
-    ? `<p style="margin: 0 0 8px;"><strong>Region:</strong> ${escapeHtml(input.regionName)}</p>`
+  const regionNames = input.regionNames ?? [];
+  const region = regionNames.length > 0
+    ? `<p style="margin: 0 0 8px;"><strong>Regions:</strong> ${escapeHtml(regionNames.join(', '))}</p>`
     : '';
   const bodyHtml = `
     <p style="margin: 0 0 16px;">A new organisation has requested to join the network and is awaiting review.</p>

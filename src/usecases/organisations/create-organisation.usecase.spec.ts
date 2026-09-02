@@ -23,7 +23,7 @@ function build(overrides: { existingUser?: unknown } = {}) {
     .mockResolvedValue(overrides.existingUser ?? null);
   const organisationFindUnique = jest
     .fn()
-    .mockResolvedValue({ id: 'org-1', name: 'Bridge to Hope', users: [] });
+    .mockResolvedValue({ id: 'org-1', name: 'Bridge to Hope', users: [], regions: [] });
   const prisma = {
     organisation: { findUnique: organisationFindUnique },
     user: { findUnique: userFindUnique },

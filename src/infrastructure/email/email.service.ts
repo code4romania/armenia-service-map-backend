@@ -163,7 +163,7 @@ export class EmailService {
     contactName: string;
     contactEmail: string;
     servicesDescription: string;
-    regionName?: string;
+    regionNames?: string[];
     adminUrl: string;
   }) {
     const { to, ...rest } = input;
