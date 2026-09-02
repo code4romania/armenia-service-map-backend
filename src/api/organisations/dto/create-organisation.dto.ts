@@ -1,8 +1,10 @@
 import { Type } from 'class-transformer';
 import {
   IsArray,
+  IsDefined,
   IsEmail,
   IsEnum,
+  IsNotEmpty,
   IsOptional,
   IsString,
   IsUUID,
@@ -29,9 +31,32 @@ export class CreateOrganisationUserDto {
   role?: Role;
 }
 
+/** The person who receives the invitation and becomes the organisation's ORG_ADMIN. */
+export class CreateOrganisationAdminDto {
+  @IsString()
+  @IsNotEmpty()
+  firstName: string;
+
+  @IsString()
+  @IsNotEmpty()
+  lastName: string;
+
+  @IsEmail()
+  email: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
+}
+
 export class CreateOrganisationDto {
   @IsString()
   name: string;
+
+  @IsDefined()
+  @ValidateNested()
+  @Type(() => CreateOrganisationAdminDto)
+  admin: CreateOrganisationAdminDto;
 
   @IsOptional()
   @IsString()
@@ -89,8 +114,9 @@ export class CreateOrganisationDto {
   @IsString()
   contactPersonName?: string;
 
+  @IsOptional()
   @IsEmail()
-  contactPersonEmail: string;
+  contactPersonEmail?: string;
 
   @IsOptional()
   @IsString()

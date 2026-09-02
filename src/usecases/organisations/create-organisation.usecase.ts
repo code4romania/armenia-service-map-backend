@@ -8,10 +8,7 @@ import { EmailService } from '../../infrastructure/email/email.service.js';
 import { Role } from '../../common/enums/role.enum.js';
 import { OrganisationStatus } from '../../common/enums/organisation-status.enum.js';
 import { UserStatus } from '../../common/enums/user-status.enum.js';
-import {
-  sendInvitationEmail,
-  splitContactName,
-} from './helpers/join-network-invitation.js';
+import { sendInvitationEmail } from './helpers/join-network-invitation.js';
 
 type NewUser = {
   firstName: string;
@@ -24,7 +21,7 @@ type NewUser = {
 /**
  * Admin-initiated organisation creation. Unlike the public join-network flow, the
  * organisation is trusted from the start: it is created ACTIVE (no review step) and
- * an ORG_ADMIN account is provisioned immediately from the contact email.
+ * the ORG_ADMIN account named in `admin` is provisioned immediately.
  */
 @Injectable()
 export class CreateOrganisationUseCase {
@@ -39,6 +36,12 @@ export class CreateOrganisationUseCase {
   async execute(
     data: {
       name: string;
+      admin: {
+        firstName: string;
+        lastName: string;
+        email: string;
+        phone?: string;
+      };
       legalName?: string;
       description?: string;
       website?: string;
@@ -53,7 +56,7 @@ export class CreateOrganisationUseCase {
       legalRepEmail?: string;
       legalRepPhone?: string;
       contactPersonName?: string;
-      contactPersonEmail: string;
+      contactPersonEmail?: string;
       contactPersonPhone?: string;
       legalDocumentUrl?: string;
       logoUrl?: string;
@@ -64,19 +67,20 @@ export class CreateOrganisationUseCase {
     },
     createdByUserId: string,
   ) {
-    const { users = [], ...orgData } = data;
-    const contactEmail = data.contactPersonEmail.trim().toLowerCase();
+    const { admin, users = [], ...orgData } = data;
+    const adminEmail = admin.email.trim().toLowerCase();
 
-    const contactAdmin: NewUser = {
-      ...splitContactName(data.contactPersonName),
-      email: contactEmail,
-      phone: data.contactPersonPhone,
+    const orgAdmin: NewUser = {
+      firstName: admin.firstName.trim(),
+      lastName: admin.lastName.trim(),
+      email: adminEmail,
+      phone: admin.phone,
       role: Role.ORG_ADMIN,
     };
     const extraUsers = users
       .map((user) => ({ ...user, email: user.email.trim().toLowerCase() }))
-      .filter((user) => user.email !== contactEmail);
-    const usersToCreate = [contactAdmin, ...extraUsers];
+      .filter((user) => user.email !== adminEmail);
+    const usersToCreate = [orgAdmin, ...extraUsers];
 
     for (const user of usersToCreate) {
       const existing = await this.prisma.user.findUnique({
@@ -94,7 +98,6 @@ export class CreateOrganisationUseCase {
       const organisation = await tx.organisation.create({
         data: {
           ...orgData,
-          contactPersonEmail: contactEmail,
           tags: orgData.tags ?? [],
           status: OrganisationStatus.ACTIVE,
           submissionSource: 'ADMIN',
