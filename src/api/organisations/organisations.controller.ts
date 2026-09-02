@@ -50,8 +50,11 @@ export class OrganisationsController {
   }
 
   @Post()
-  async create(@Body() dto: CreateOrganisationDto) {
-    return this.createOrganisation.execute(dto);
+  async create(
+    @Body() dto: CreateOrganisationDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.createOrganisation.execute(dto, req.user.sub);
   }
 
   @Patch(':id')
