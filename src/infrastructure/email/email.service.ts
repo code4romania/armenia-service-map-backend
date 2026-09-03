@@ -1,35 +1,23 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import nodemailer from 'nodemailer';
-import { ServerClient } from 'postmark';
-import { MailMessage, MailTransport, PostmarkTransport } from './postmark.transport.js';
-import { renderInvitationTemplate, InvitationTemplateInput } from './templates/invitation.template.js';
+import { MailTransport } from './mail.transport.js';
+import {
+  createMailTransport,
+  EmailRuntimeConfig,
+  resolveEmailRuntime,
+} from './mail-transport.factory.js';
+import {
+  renderInvitationTemplate,
+  InvitationTemplateInput,
+} from './templates/invitation.template.js';
 import { renderResetPasswordTemplate } from './templates/reset-password.template.js';
-import { renderSubscriptionConfirmationTemplate, SubscriptionLocale } from './templates/subscription-confirmation.template.js';
+import {
+  renderSubscriptionConfirmationTemplate,
+  SubscriptionLocale,
+} from './templates/subscription-confirmation.template.js';
 import { renderNewServiceNotificationTemplate } from './templates/new-service-notification.template.js';
 import { renderNewNeedReportAdminTemplate } from './templates/new-need-report-admin.template.js';
 import { renderNewJoinNetworkAdminTemplate } from './templates/new-join-network-admin.template.js';
-
-type EmailRuntimeConfig = {
-  host: string;
-  port: number;
-  from: string;
-  postmarkServerToken?: string;
-  postmarkMessageStream?: string;
-};
-
-/** Adapts nodemailer's SMTP transport to the {@link MailTransport} seam. */
-class SmtpTransport implements MailTransport {
-  private readonly transporter: ReturnType<typeof nodemailer.createTransport>;
-
-  constructor(host: string, port: number) {
-    this.transporter = nodemailer.createTransport({ host, port, secure: false });
-  }
-
-  async sendMail(message: MailMessage): Promise<unknown> {
-    return this.transporter.sendMail(message);
-  }
-}
 
 @Injectable()
 export class EmailService {
@@ -39,22 +27,10 @@ export class EmailService {
   constructor(configOrRuntime: ConfigService | EmailRuntimeConfig) {
     const runtime =
       'get' in configOrRuntime
-        ? {
-            host: configOrRuntime.get<string>('MAIL_HOST', 'localhost'),
-            port: configOrRuntime.get<number>('MAIL_PORT', 1025),
-            from: configOrRuntime.getOrThrow<string>('MAIL_FROM'),
-            postmarkServerToken: configOrRuntime.get<string>('POSTMARK_SERVER_TOKEN'),
-            postmarkMessageStream: configOrRuntime.get<string>('POSTMARK_MESSAGE_STREAM', 'outbound'),
-          }
+        ? resolveEmailRuntime(configOrRuntime)
         : configOrRuntime;
-
     this.fromAddress = runtime.from;
-    this.transport = runtime.postmarkServerToken
-      ? new PostmarkTransport(
-          new ServerClient(runtime.postmarkServerToken),
-          runtime.postmarkMessageStream ?? 'outbound',
-        )
-      : new SmtpTransport(runtime.host, runtime.port);
+    this.transport = createMailTransport(runtime);
   }
 
   renderInvitation(input: InvitationTemplateInput): string {
@@ -71,7 +47,11 @@ export class EmailService {
     });
   }
 
-  async sendResetPassword(input: { to: string; recipientName: string; resetUrl: string }) {
+  async sendResetPassword(input: {
+    to: string;
+    recipientName: string;
+    resetUrl: string;
+  }) {
     const html = renderResetPasswordTemplate({
       recipientName: input.recipientName,
       resetUrl: input.resetUrl,
@@ -129,7 +109,12 @@ export class EmailService {
     unsubscribeUrl: string;
   }) {
     const { subject, html } = renderSubscriptionConfirmationTemplate(input);
-    await this.transport.sendMail({ from: this.fromAddress, to: input.to, subject, html });
+    await this.transport.sendMail({
+      from: this.fromAddress,
+      to: input.to,
+      subject,
+      html,
+    });
   }
 
   async sendNewServiceNotification(input: {
@@ -141,7 +126,12 @@ export class EmailService {
     unsubscribeUrl: string;
   }) {
     const { subject, html } = renderNewServiceNotificationTemplate(input);
-    await this.transport.sendMail({ from: this.fromAddress, to: input.to, subject, html });
+    await this.transport.sendMail({
+      from: this.fromAddress,
+      to: input.to,
+      subject,
+      html,
+    });
   }
 
   async sendNewNeedReportToAdmin(input: {
@@ -154,7 +144,12 @@ export class EmailService {
   }) {
     const { to, ...rest } = input;
     const { subject, html } = renderNewNeedReportAdminTemplate(rest);
-    await this.transport.sendMail({ from: this.fromAddress, to, subject, html });
+    await this.transport.sendMail({
+      from: this.fromAddress,
+      to,
+      subject,
+      html,
+    });
   }
 
   async sendNewJoinNetworkRequestToAdmin(input: {
@@ -168,6 +163,11 @@ export class EmailService {
   }) {
     const { to, ...rest } = input;
     const { subject, html } = renderNewJoinNetworkAdminTemplate(rest);
-    await this.transport.sendMail({ from: this.fromAddress, to, subject, html });
+    await this.transport.sendMail({
+      from: this.fromAddress,
+      to,
+      subject,
+      html,
+    });
   }
 }

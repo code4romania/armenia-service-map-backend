@@ -1,5 +1,11 @@
 import { plainToInstance, Type } from 'class-transformer';
-import { IsNumber, IsOptional, IsString, validateSync } from 'class-validator';
+import {
+  IsIn,
+  IsNumber,
+  IsOptional,
+  IsString,
+  validateSync,
+} from 'class-validator';
 
 export class AppConfig {
   @IsNumber()
@@ -60,15 +66,14 @@ export class AppConfig {
   @IsString()
   MAIL_FROM: string;
 
-  // When set, transactional/notification email is delivered via Postmark
-  // instead of the local SMTP (mailcatcher) transport.
-  @IsOptional()
-  @IsString()
-  POSTMARK_SERVER_TOKEN?: string;
+  // `ses` by default (staging & production); local dev sets `smtp` (mailcatcher).
+  // SES reuses S3_ACCESS_KEY / S3_SECRET_KEY; SES_REGION overrides S3_REGION.
+  @IsIn(['smtp', 'ses'])
+  MAIL_TRANSPORT: 'smtp' | 'ses' = 'ses';
 
   @IsOptional()
   @IsString()
-  POSTMARK_MESSAGE_STREAM: string = 'outbound';
+  SES_REGION?: string;
 }
 
 export function validate(config: Record<string, unknown>) {
