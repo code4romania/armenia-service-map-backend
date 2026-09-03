@@ -1,9 +1,21 @@
 import { IsOptional, IsUUID, IsBoolean, IsEnum } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto.js';
+import { SortableQueryDto } from '../../../common/dto/pagination-query.dto.js';
 import { ServiceStatus } from '../../../common/enums/service-status.enum.js';
 
-export class ServiceQueryDto extends PaginationQueryDto {
+export const SERVICE_SORT_FIELDS = [
+  'id',
+  'title',
+  'titleHy',
+  'status',
+  'isAvailable',
+  'availabilityStart',
+  'availabilityEnd',
+  'createdAt',
+  'updatedAt',
+] as const;
+
+export class ServiceQueryDto extends SortableQueryDto(SERVICE_SORT_FIELDS, 'title') {
   @IsOptional()
   @IsUUID()
   organisationId?: string;

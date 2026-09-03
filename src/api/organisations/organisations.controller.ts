@@ -1,9 +1,7 @@
 import { Controller, Get, Post, Patch, Delete, Body, Param, Query, Req } from '@nestjs/common';
-import { IsEnum, IsOptional } from 'class-validator';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { Role } from '../../common/enums/role.enum.js';
-import { OrganisationStatus } from '../../common/enums/organisation-status.enum.js';
-import { PaginationQueryDto } from '../../common/dto/pagination-query.dto.js';
+import { OrganisationQueryDto } from './dto/organisation-query.dto.js';
 import { CreateOrganisationDto } from './dto/create-organisation.dto.js';
 import { UpdateOrganisationDto } from './dto/update-organisation.dto.js';
 import { RejectOrganisationDto } from './dto/reject-organisation.dto.js';
@@ -17,12 +15,6 @@ import { DeactivateOrganisationUseCase } from '../../usecases/organisations/deac
 import { ApproveOrganisationUseCase } from '../../usecases/organisations/approve-organisation.usecase.js';
 import { RejectOrganisationUseCase } from '../../usecases/organisations/reject-organisation.usecase.js';
 import type { AuthenticatedRequest } from '../../common/interfaces/authenticated-request.interface.js';
-
-class OrganisationQueryDto extends PaginationQueryDto {
-  @IsOptional()
-  @IsEnum(OrganisationStatus)
-  status?: OrganisationStatus;
-}
 
 @Controller('admin/organisations')
 @Roles(Role.SUPER_ADMIN)
