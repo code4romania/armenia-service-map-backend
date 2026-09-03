@@ -2,6 +2,7 @@ import { EmailService } from './email.service';
 
 describe('EmailService', () => {
   const service = new EmailService({
+    transport: 'smtp',
     host: 'localhost',
     port: 1025,
     from: 'noreply@refugeesupport.am',
@@ -21,7 +22,7 @@ describe('EmailService', () => {
 
 describe('EmailService subscription emails', () => {
   function makeService() {
-    const service = new EmailService({ host: 'localhost', port: 1025, from: 'from@test' });
+    const service = new EmailService({ transport: 'smtp', host: 'localhost', port: 1025, from: 'from@test' });
     const sendMail = jest.fn().mockResolvedValue(undefined);
     // @ts-expect-error override private transport for assertion
     service.transport = { sendMail };
@@ -78,7 +79,7 @@ describe('EmailService subscription emails', () => {
 
 describe('EmailService admin submission emails', () => {
   function makeService() {
-    const service = new EmailService({ host: 'localhost', port: 1025, from: 'from@test' });
+    const service = new EmailService({ transport: 'smtp', host: 'localhost', port: 1025, from: 'from@test' });
     const sendMail = jest.fn().mockResolvedValue(undefined);
     // @ts-expect-error override private transport for assertion
     service.transport = { sendMail };
