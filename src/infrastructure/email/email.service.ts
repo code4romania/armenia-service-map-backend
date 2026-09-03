@@ -9,8 +9,16 @@ import {
 import {
   renderInvitationTemplate,
   InvitationTemplateInput,
+  INVITATION_SUBJECT,
 } from './templates/invitation.template.js';
-import { renderResetPasswordTemplate } from './templates/reset-password.template.js';
+import {
+  renderResetPasswordTemplate,
+  RESET_PASSWORD_SUBJECT,
+} from './templates/reset-password.template.js';
+import {
+  renderOrganisationReviewOutcomeTemplate,
+  OrganisationReviewOutcomeInput,
+} from './templates/organisation-review-outcome.template.js';
 import {
   renderSubscriptionConfirmationTemplate,
   SubscriptionLocale,
@@ -42,7 +50,7 @@ export class EmailService {
     await this.transport.sendMail({
       from: this.fromAddress,
       to: input.to,
-      subject: 'You are invited to Armenia Service Map',
+      subject: INVITATION_SUBJECT,
       html,
     });
   }
@@ -59,43 +67,19 @@ export class EmailService {
     await this.transport.sendMail({
       from: this.fromAddress,
       to: input.to,
-      subject: 'Reset your password',
+      subject: RESET_PASSWORD_SUBJECT,
       html,
     });
   }
 
-  async sendOrganisationReviewOutcome(input: {
-    to: string;
-    recipientName: string;
-    organisationName: string;
-    outcome: 'APPROVED' | 'REJECTED';
-    rejectionReason?: string;
-  }) {
-    const isApproved = input.outcome === 'APPROVED';
-    const subject = isApproved
-      ? 'Your organisation has been approved'
-      : 'Your organisation application was not approved';
-
-    const reasonBlock =
-      !isApproved && input.rejectionReason
-        ? `<p><strong>Reason provided:</strong> ${input.rejectionReason}</p>`
-        : '';
-
-    const html = `
-      <div style="font-family: Arial, sans-serif; line-height: 1.5;">
-        <h2>${subject}</h2>
-        <p>Hello ${input.recipientName},</p>
-        <p>
-          Your request for <strong>${input.organisationName}</strong> to join Armenia Service Map was
-          ${isApproved ? 'approved' : 'reviewed and rejected'}.
-        </p>
-        ${reasonBlock}
-      </div>
-    `.trim();
-
+  async sendOrganisationReviewOutcome(
+    input: OrganisationReviewOutcomeInput & { to: string },
+  ) {
+    const { to, ...rest } = input;
+    const { subject, html } = renderOrganisationReviewOutcomeTemplate(rest);
     await this.transport.sendMail({
       from: this.fromAddress,
-      to: input.to,
+      to,
       subject,
       html,
     });
