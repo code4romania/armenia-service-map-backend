@@ -12,7 +12,7 @@ describe('AuthService', () => {
           id: 'u1',
           email: 'pending@example.com',
           passwordHash,
-          role: 'ORG_MEMBER',
+          role: 'ORG_ADMIN',
           organisationId: null,
           status: UserStatus.PENDING,
         }),

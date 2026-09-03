@@ -10,7 +10,7 @@ import { OrgUserQueryDto } from './dto/org-user-query.dto.js';
 import type { AuthenticatedRequest } from '../../common/interfaces/authenticated-request.interface.js';
 
 @Controller('org/profile')
-@Roles(Role.ORG_ADMIN, Role.ORG_MEMBER)
+@Roles(Role.ORG_ADMIN)
 export class OrgProfileController {
   constructor(
     private readonly getOneOrganisation: GetOneOrganisationUseCase,

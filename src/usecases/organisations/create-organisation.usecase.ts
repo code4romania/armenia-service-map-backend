@@ -16,7 +16,6 @@ type NewUser = {
   lastName: string;
   email: string;
   phone?: string;
-  role?: Role;
 };
 
 /**
@@ -76,7 +75,6 @@ export class CreateOrganisationUseCase {
       lastName: admin.lastName.trim(),
       email: adminEmail,
       phone: admin.phone,
-      role: Role.ORG_ADMIN,
     };
     const extraUsers = users
       .map((user) => ({ ...user, email: user.email.trim().toLowerCase() }))
@@ -126,7 +124,8 @@ export class CreateOrganisationUseCase {
               firstName: user.firstName,
               lastName: user.lastName,
               phone: user.phone,
-              role: user.role ?? Role.ORG_MEMBER,
+              // Every organisation user is an ORG_ADMIN; the member role was retired.
+              role: Role.ORG_ADMIN,
               status: UserStatus.PENDING,
               organisationId: organisation.id,
               passwordHash,

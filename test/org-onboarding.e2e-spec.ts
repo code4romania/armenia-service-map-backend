@@ -33,8 +33,8 @@ describe('Organisation onboarding data model (e2e)', () => {
           INSERT INTO users (
             id, email, password_hash, first_name, last_name, role, status, organisation_id, created_at, updated_at
           ) VALUES
-            ($1, $2, 'hash-a', 'Org', 'User One', 'ORG_MEMBER'::"Role", 'PENDING'::"UserStatus", $5, NOW(), NOW()),
-            ($3, $4, 'hash-b', 'Org', 'User Two', 'ORG_MEMBER'::"Role", 'PENDING'::"UserStatus", $5, NOW(), NOW())
+            ($1, $2, 'hash-a', 'Org', 'User One', 'ORG_ADMIN'::"Role", 'PENDING'::"UserStatus", $5, NOW(), NOW()),
+            ($3, $4, 'hash-b', 'Org', 'User Two', 'ORG_ADMIN'::"Role", 'PENDING'::"UserStatus", $5, NOW(), NOW())
         `,
         [userOneId, userOneEmail, userTwoId, userTwoEmail, insertedOrganisationId],
       );

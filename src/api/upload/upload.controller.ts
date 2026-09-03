@@ -5,7 +5,7 @@ import { GetPresignedUrlUseCase } from '../../usecases/upload/get-presigned-url.
 import { CreatePresignedUrlDto } from './dto/create-presigned-url.dto.js';
 
 @Controller('upload')
-@Roles(Role.SUPER_ADMIN, Role.ORG_ADMIN, Role.ORG_MEMBER)
+@Roles(Role.SUPER_ADMIN, Role.ORG_ADMIN)
 export class UploadController {
   constructor(private readonly getPresignedUrl: GetPresignedUrlUseCase) {}
 

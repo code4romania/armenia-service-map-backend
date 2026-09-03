@@ -11,7 +11,6 @@ datasource db {
 enum Role {
   SUPER_ADMIN
   ORG_ADMIN
-  ORG_MEMBER
 }
 
 enum UserStatus {
@@ -142,7 +141,7 @@ model User {
   phone          String?
   status         UserStatus  @default(ACTIVE)
   lastAccessAt   DateTime?   @map("last_access_at")
-  role           Role        @default(ORG_MEMBER)
+  role           Role        @default(ORG_ADMIN)
   organisationId String?     @map("organisation_id")
   avatarUrl      String?     @map("avatar_url")
   refreshToken   String?     @map("refresh_token")

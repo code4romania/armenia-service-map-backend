@@ -3,14 +3,12 @@ import {
   IsArray,
   IsDefined,
   IsEmail,
-  IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
   IsUUID,
   ValidateNested,
 } from 'class-validator';
-import { Role } from '../../../common/enums/role.enum.js';
 
 export class CreateOrganisationUserDto {
   @IsString()
@@ -25,10 +23,6 @@ export class CreateOrganisationUserDto {
   @IsOptional()
   @IsString()
   phone?: string;
-
-  @IsOptional()
-  @IsEnum(Role)
-  role?: Role;
 }
 
 /** The person who receives the invitation and becomes the organisation's ORG_ADMIN. */

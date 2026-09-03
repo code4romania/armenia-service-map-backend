@@ -16,7 +16,7 @@ import { DomainExceptionService } from '../../infrastructure/exceptions/domain-e
 import type { AuthenticatedRequest } from '../../common/interfaces/authenticated-request.interface.js';
 
 @Controller('org/services')
-@Roles(Role.ORG_ADMIN, Role.ORG_MEMBER)
+@Roles(Role.ORG_ADMIN)
 export class OrgServicesController {
   constructor(
     private readonly getManyServices: GetManyServicesUseCase,
