@@ -198,7 +198,7 @@ async function main() {
           contactPersonEmail: organisation.contactPersonEmail,
           contactPersonPhone: organisation.contactPersonPhone,
           status: organisation.status,
-          regionId: getRegion(organisation.regionSlug).id,
+          regions: { create: [{ regionId: getRegion(organisation.regionSlug).id }] },
           tags: organisation.tags,
           observations: organisation.observations,
         },

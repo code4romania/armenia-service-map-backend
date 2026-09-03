@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service.js';
+import { flattenRegions, includeOrganisationRegions } from '../../modules/organisations/organisation-regions.js';
 import { OrganisationStatus } from '../../common/enums/organisation-status.enum.js';
 import { DomainExceptionService } from '../../infrastructure/exceptions/domain-exception.service.js';
 import { EmailService } from '../../infrastructure/email/email.service.js';
@@ -20,7 +21,7 @@ export class RejectOrganisationUseCase {
   async execute(id: string, reviewerId: string, rejectionReason?: string) {
     const organisation = await this.prisma.organisation.findUnique({
       where: { id, deletedAt: null },
-      include: { region: true },
+      include: includeOrganisationRegions,
     });
 
     if (!organisation) {
@@ -39,7 +40,7 @@ export class RejectOrganisationUseCase {
         reviewedByUserId: reviewerId,
         rejectionReason: rejectionReason?.trim() || null,
       },
-      include: { region: true },
+      include: includeOrganisationRegions,
     });
 
     if (organisation.contactPersonEmail) {
@@ -73,6 +74,6 @@ export class RejectOrganisationUseCase {
       },
     );
 
-    return updatedOrganisation;
+    return flattenRegions(updatedOrganisation);
   }
 }

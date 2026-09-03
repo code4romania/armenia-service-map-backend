@@ -6,6 +6,7 @@ import { PrismaService } from '../../infrastructure/prisma/prisma.service.js';
 import { DomainExceptionService } from '../../infrastructure/exceptions/domain-exception.service.js';
 import { EmailService } from '../../infrastructure/email/email.service.js';
 import { Role } from '../../common/enums/role.enum.js';
+import { flattenRegions, includeOrganisationRegions } from '../../modules/organisations/organisation-regions.js';
 import { OrganisationStatus } from '../../common/enums/organisation-status.enum.js';
 import { UserStatus } from '../../common/enums/user-status.enum.js';
 import { sendInvitationEmail } from './helpers/join-network-invitation.js';
@@ -62,12 +63,12 @@ export class CreateOrganisationUseCase {
       logoUrl?: string;
       observations?: string;
       tags?: string[];
-      regionId?: string;
+      regionIds?: string[];
       users?: NewUser[];
     },
     createdByUserId: string,
   ) {
-    const { admin, users = [], ...orgData } = data;
+    const { admin, users = [], regionIds, ...orgData } = data;
     const adminEmail = admin.email.trim().toLowerCase();
 
     const orgAdmin: NewUser = {
@@ -109,6 +110,9 @@ export class CreateOrganisationUseCase {
           submissionSource: 'ADMIN',
           reviewedAt: new Date(),
           reviewedByUserId: createdByUserId,
+          ...(regionIds
+            ? { regions: { create: Array.from(new Set(regionIds)).map((regionId) => ({ regionId })) } }
+            : {}),
         },
       });
 
@@ -149,10 +153,10 @@ export class CreateOrganisationUseCase {
       ),
     );
 
-    return this.prisma.organisation.findUnique({
+    const created = await this.prisma.organisation.findUnique({
       where: { id: result.organisation.id, deletedAt: null },
       include: {
-        region: true,
+        ...includeOrganisationRegions,
         users: {
           where: { deletedAt: null },
           select: {
@@ -167,5 +171,6 @@ export class CreateOrganisationUseCase {
         _count: { select: { services: true } },
       },
     });
+    return created ? flattenRegions(created) : created;
   }
 }

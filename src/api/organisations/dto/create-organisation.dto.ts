@@ -140,8 +140,9 @@ export class CreateOrganisationDto {
   tags?: string[];
 
   @IsOptional()
-  @IsUUID()
-  regionId?: string;
+  @IsArray()
+  @IsUUID('4', { each: true })
+  regionIds?: string[];
 
   @IsOptional()
   @IsArray()

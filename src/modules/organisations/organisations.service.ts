@@ -4,6 +4,7 @@ import { DomainExceptionService } from '../../infrastructure/exceptions/domain-e
 import { PaginationQuery } from '../../common/interfaces/pagination.interface.js';
 import { paginatedResult } from '../../infrastructure/base/base-crud.service.js';
 import { OrganisationStatus } from '../../common/enums/organisation-status.enum.js';
+import { flattenRegions, includeOrganisationRegions, uniqueRegionIds } from './organisation-regions.js';
 
 @Injectable()
 export class OrganisationsService {
@@ -27,21 +28,21 @@ export class OrganisationsService {
         skip: (page - 1) * perPage,
         take: perPage,
         include: {
-          region: true,
+          ...includeOrganisationRegions,
           _count: { select: { users: true, services: true } },
         },
       }),
       this.prisma.organisation.count({ where }),
     ]);
 
-    return paginatedResult(data, total, page, perPage);
+    return paginatedResult(data.map(flattenRegions), total, page, perPage);
   }
 
   async findOne(id: string) {
     const org = await this.prisma.organisation.findUnique({
       where: { id, deletedAt: null },
       include: {
-        region: true,
+        ...includeOrganisationRegions,
         users: {
           where: { deletedAt: null },
           select: { id: true, firstName: true, lastName: true, email: true, role: true, createdAt: true },
@@ -50,7 +51,7 @@ export class OrganisationsService {
       },
     });
     if (!org) throw this.exceptions.notFound('Organisation', id);
-    return org;
+    return flattenRegions(org);
   }
 
   async create(data: {
@@ -80,12 +81,17 @@ export class OrganisationsService {
     reviewedAt?: Date | null;
     reviewedByUserId?: string;
     rejectionReason?: string | null;
-    regionId?: string;
+    regionIds?: string[];
   }) {
-    return this.prisma.organisation.create({
-      data,
-      include: { region: true },
+    const { regionIds, ...rest } = data;
+    const org = await this.prisma.organisation.create({
+      data: {
+        ...rest,
+        ...(regionIds ? { regions: { create: uniqueRegionIds(regionIds).map((regionId) => ({ regionId })) } } : {}),
+      },
+      include: includeOrganisationRegions,
     });
+    return flattenRegions(org);
   }
 
   async update(id: string, data: {
@@ -115,14 +121,26 @@ export class OrganisationsService {
     reviewedAt?: Date | null;
     reviewedByUserId?: string | null;
     rejectionReason?: string | null;
-    regionId?: string;
+    regionIds?: string[];
   }) {
     await this.findOne(id);
-    return this.prisma.organisation.update({
+    const { regionIds, ...rest } = data;
+    const org = await this.prisma.organisation.update({
       where: { id },
-      data,
-      include: { region: true },
+      data: {
+        ...rest,
+        ...(regionIds
+          ? {
+              regions: {
+                deleteMany: {},
+                create: uniqueRegionIds(regionIds).map((regionId) => ({ regionId })),
+              },
+            }
+          : {}),
+      },
+      include: includeOrganisationRegions,
     });
+    return flattenRegions(org);
   }
 
   async softDelete(id: string) {

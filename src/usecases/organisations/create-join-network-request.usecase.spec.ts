@@ -8,6 +8,7 @@ describe('CreateJoinNetworkRequestUseCase', () => {
         id: 'org-1',
         name: 'Bridge to Hope',
         status: OrganisationStatus.PENDING,
+        regions: [],
       }),
     };
     const prisma = {
@@ -72,6 +73,7 @@ describe('CreateJoinNetworkRequestUseCase', () => {
         id: 'org-1',
         name: 'Bridge to Hope',
         status: OrganisationStatus.PENDING,
+        regions: [],
       }),
     };
     const prisma = {
@@ -99,5 +101,50 @@ describe('CreateJoinNetworkRequestUseCase', () => {
     });
 
     expect(result.status).toBe(OrganisationStatus.PENDING);
+  });
+
+  it('stores the selected regions and lists their names in the admin email', async () => {
+    const organisationsService = {
+      create: jest.fn().mockResolvedValue({
+        id: 'org-1',
+        name: 'Bridge to Hope',
+        status: OrganisationStatus.PENDING,
+        regions: [
+          { id: 'r-yerevan', name: 'Yerevan' },
+          { id: 'r-shirak', name: 'Shirak' },
+        ],
+      }),
+    };
+    const prisma = {
+      user: { findMany: jest.fn().mockResolvedValue([{ id: 'super-1', email: 'a1@x.com' }]) },
+    };
+    const notifications = { createMany: jest.fn().mockResolvedValue(undefined) };
+    const email = {
+      sendNewJoinNetworkRequestToAdmin: jest.fn().mockResolvedValue(undefined),
+    };
+    const config = { get: jest.fn().mockReturnValue('http://app.test') };
+
+    const useCase = new CreateJoinNetworkRequestUseCase(
+      organisationsService as never,
+      prisma as never,
+      notifications as never,
+      email as never,
+      config as never,
+    );
+
+    await useCase.execute({
+      organisationName: 'Bridge to Hope',
+      regionIds: ['r-yerevan', 'r-shirak'],
+      contactName: 'Mariam Hakobyan',
+      email: 'mariam@example.com',
+      servicesDescription: 'Legal aid.',
+    });
+
+    expect(organisationsService.create).toHaveBeenCalledWith(
+      expect.objectContaining({ regionIds: ['r-yerevan', 'r-shirak'] }),
+    );
+    expect(email.sendNewJoinNetworkRequestToAdmin).toHaveBeenCalledWith(
+      expect.objectContaining({ regionNames: ['Yerevan', 'Shirak'] }),
+    );
   });
 });

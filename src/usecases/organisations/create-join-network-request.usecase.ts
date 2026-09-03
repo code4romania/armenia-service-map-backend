@@ -22,7 +22,7 @@ export class CreateJoinNetworkRequestUseCase {
 
   async execute(data: {
     organisationName: string;
-    regionId?: string;
+    regionIds?: string[];
     contactName: string;
     email: string;
     phone?: string;
@@ -31,7 +31,7 @@ export class CreateJoinNetworkRequestUseCase {
     const organisation = await this.organisationsService.create({
       name: data.organisationName.trim(),
       description: data.servicesDescription.trim(),
-      regionId: data.regionId,
+      regionIds: data.regionIds ?? [],
       contactPersonName: data.contactName.trim(),
       contactPersonEmail: data.email.trim().toLowerCase(),
       contactPersonPhone: data.phone?.trim(),
@@ -70,7 +70,7 @@ export class CreateJoinNetworkRequestUseCase {
             contactName: data.contactName.trim(),
             contactEmail: data.email.trim().toLowerCase(),
             servicesDescription: data.servicesDescription.trim(),
-            regionName: undefined,
+            regionNames: organisation.regions.map((region) => region.name),
             adminUrl,
           }),
         ),
