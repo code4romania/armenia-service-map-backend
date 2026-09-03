@@ -8,7 +8,7 @@ import { DashboardTrendsQueryDto } from '../analytics/dto/dashboard-trends-query
 import type { AuthenticatedRequest } from '../../common/interfaces/authenticated-request.interface.js';
 
 @Controller('org/analytics')
-@Roles(Role.ORG_ADMIN, Role.ORG_MEMBER)
+@Roles(Role.ORG_ADMIN)
 export class OrgAnalyticsController {
   constructor(
     private readonly getOrgOverview: GetOrgOverviewUseCase,

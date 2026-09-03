@@ -18,7 +18,7 @@ describe('Notifications API contract (e2e)', () => {
           INSERT INTO users (
             id, email, password_hash, first_name, last_name, role, status, created_at, updated_at
           ) VALUES (
-            $1, $2, 'hash', 'Notifications', 'Tester', 'ORG_MEMBER'::"Role", 'ACTIVE'::"UserStatus", NOW(), NOW()
+            $1, $2, 'hash', 'Notifications', 'Tester', 'ORG_ADMIN'::"Role", 'ACTIVE'::"UserStatus", NOW(), NOW()
           )
           RETURNING id
         `,

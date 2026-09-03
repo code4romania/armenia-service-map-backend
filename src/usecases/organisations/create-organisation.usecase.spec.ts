@@ -179,12 +179,7 @@ describe('CreateOrganisationUseCase', () => {
         admin: ADMIN,
         users: [
           { firstName: 'Ani', lastName: 'Petrosyan', email: 'ani@example.com' },
-          {
-            firstName: 'Mariam',
-            lastName: 'H',
-            email: 'mariam@example.com',
-            role: Role.ORG_MEMBER,
-          },
+          { firstName: 'Mariam', lastName: 'H', email: 'mariam@example.com' },
         ],
       },
       'admin-1',

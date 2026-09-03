@@ -71,7 +71,7 @@ describe('Auth status rules (e2e)', () => {
             INSERT INTO users (
               id, email, password_hash, first_name, last_name, role, status, organisation_id, created_at, updated_at
             ) VALUES (
-              $1, $2, 'hash', 'Pending', 'User', 'ORG_MEMBER'::"Role", 'PENDING'::"UserStatus", $3, NOW(), NOW()
+              $1, $2, 'hash', 'Pending', 'User', 'ORG_ADMIN'::"Role", 'PENDING'::"UserStatus", $3, NOW(), NOW()
             )
           `,
           [pendingUserId, pendingEmail, organisation.rows[0].id],
