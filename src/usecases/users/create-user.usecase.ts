@@ -13,6 +13,7 @@ export class CreateUserUseCase {
     email: string;
     firstName: string;
     lastName: string;
+    phone?: string;
     role: Role;
     organisationId?: string;
     password?: string;

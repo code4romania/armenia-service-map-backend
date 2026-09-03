@@ -23,6 +23,10 @@ export class UserQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsEnum(UserStatus)
   status?: UserStatus;
+
+  @IsOptional()
+  @IsEnum(Role)
+  role?: Role;
 }
 
 @Controller('admin/users')

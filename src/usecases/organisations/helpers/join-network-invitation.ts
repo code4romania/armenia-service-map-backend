@@ -24,7 +24,8 @@ export async function sendInvitationEmail(input: {
   email: string;
   firstName: string;
   lastName: string;
-  organisationName: string;
+  /** Omitted for platform (super admin) accounts that belong to no organisation. */
+  organisationName?: string;
   jwt: JwtService;
   config: ConfigService;
   emailService: EmailService;

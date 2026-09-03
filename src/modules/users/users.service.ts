@@ -9,6 +9,7 @@ import { paginatedResult } from '../../infrastructure/base/base-crud.service.js'
 import { Role } from '../../common/enums/role.enum.js';
 import { UserStatus } from '../../common/enums/user-status.enum.js';
 import { EmailService } from '../../infrastructure/email/email.service.js';
+import { sendInvitationEmail } from '../../usecases/organisations/helpers/join-network-invitation.js';
 
 // Fields to never return to API
 const userSelect = {
@@ -37,12 +38,29 @@ export class UsersService {
     private readonly config: ConfigService,
   ) {}
 
-  async findMany(query: PaginationQuery & { search?: string; organisationId?: string; status?: UserStatus }) {
-    const { page = 1, perPage = 10, sortBy = 'firstName', sortOrder = 'asc', search, organisationId, status } = query;
+  async findMany(
+    query: PaginationQuery & {
+      search?: string;
+      organisationId?: string;
+      status?: UserStatus;
+      role?: Role;
+    },
+  ) {
+    const {
+      page = 1,
+      perPage = 10,
+      sortBy = 'firstName',
+      sortOrder = 'asc',
+      search,
+      organisationId,
+      status,
+      role,
+    } = query;
     const where = {
       deletedAt: null,
       ...(organisationId ? { organisationId } : {}),
       ...(status ? { status } : {}),
+      ...(role ? { role } : {}),
       ...(search
         ? {
             OR: [
@@ -90,16 +108,37 @@ export class UsersService {
     const existing = await this.prisma.user.findUnique({ where: { email: data.email } });
     if (existing) throw this.exceptions.conflict('User', `Email "${data.email}" already exists`);
 
-    // Generate a random password if not provided (user will reset via email)
+    // Without an explicit password the account starts PENDING with a throwaway hash;
+    // the invitation email lets the user set their own password, which activates them.
+    const invited = !data.password;
     const password = data.password || Math.random().toString(36).slice(-12);
     const passwordHash = await bcrypt.hash(password, 10);
 
     const { password: _, ...createData } = data;
 
-    return this.prisma.user.create({
-      data: { ...createData, passwordHash },
+    const user = await this.prisma.user.create({
+      data: {
+        ...createData,
+        ...(invited ? { status: UserStatus.PENDING } : {}),
+        passwordHash,
+      },
       select: userSelect,
     });
+
+    if (invited) {
+      await sendInvitationEmail({
+        userId: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        organisationName: user.organisation?.name,
+        jwt: this.jwt,
+        config: this.config,
+        emailService: this.emailService,
+      });
+    }
+
+    return user;
   }
 
   async update(id: string, data: {

@@ -18,6 +18,16 @@ describe('EmailService', () => {
     expect(html).toContain('https://example.com/setup');
     expect(html).toContain('Refugee Support');
   });
+
+  it('renders a platform-administrator invitation when there is no organisation', () => {
+    const html = service.renderInvitation({
+      recipientName: 'Jane',
+      setupUrl: 'https://example.com/setup',
+    });
+
+    expect(html).toContain('platform administrator');
+    expect(html).not.toContain('undefined');
+  });
 });
 
 describe('EmailService subscription emails', () => {
