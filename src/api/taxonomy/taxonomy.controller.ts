@@ -1,7 +1,9 @@
 import { Controller, Get, Post, Patch, Delete, Body, Param, Query } from '@nestjs/common';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { Role } from '../../common/enums/role.enum.js';
-import { PaginationQueryDto } from '../../common/dto/pagination-query.dto.js';
+import { TopicQueryDto } from './dto/topic-query.dto.js';
+import { NeedTagQueryDto } from './dto/need-tag-query.dto.js';
+import { TargetGroupQueryDto } from './dto/target-group-query.dto.js';
 import { CreateTopicDto } from './dto/create-topic.dto.js';
 import { UpdateTopicDto } from './dto/update-topic.dto.js';
 import { CreateNeedTagDto } from './dto/create-need-tag.dto.js';
@@ -50,7 +52,7 @@ export class TaxonomyController {
   // ---- Topics ----
 
   @Get('topics')
-  async listTopics(@Query() query: PaginationQueryDto) {
+  async listTopics(@Query() query: TopicQueryDto) {
     return this.getManyTopics.execute(query);
   }
 
@@ -97,12 +99,12 @@ export class TaxonomyController {
   // ---- Need Tags ----
 
   @Get('need-tags')
-  async listNeedTags(@Query() query: PaginationQueryDto) {
+  async listNeedTags(@Query() query: NeedTagQueryDto) {
     return this.getManyNeedTags.execute(query);
   }
 
   @Get('taxonomy/need-tags')
-  async listTaxonomyNeedTags(@Query() query: PaginationQueryDto) {
+  async listTaxonomyNeedTags(@Query() query: NeedTagQueryDto) {
     return this.getManyNeedTags.execute(query);
   }
 
@@ -144,7 +146,7 @@ export class TaxonomyController {
   // ---- Target Groups ----
 
   @Get('taxonomy/target-groups')
-  async listTargetGroups(@Query() query: PaginationQueryDto) {
+  async listTargetGroups(@Query() query: TargetGroupQueryDto) {
     return this.getManyTargetGroups.execute(query);
   }
 
