@@ -2,12 +2,22 @@ import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
+import { createHash } from 'node:crypto';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service.js';
 import { JwtPayload } from '../../common/interfaces/authenticated-request.interface.js';
 import { Role } from '../../common/enums/role.enum.js';
 import { UserStatus } from '../../common/enums/user-status.enum.js';
 import { EmailService } from '../../infrastructure/email/email.service.js';
 import { buildSetupPasswordUrl, SETUP_PASSWORD_TOKEN_TYPE } from './helpers/setup-password-link.js';
+
+/**
+ * bcrypt only looks at the first 72 bytes of its input. Refresh JWTs for one user share a
+ * far longer common prefix (header + sub claim), so hashing them directly lets any token
+ * issued to that user pass the comparison. Digest first so the whole token is covered.
+ */
+function digestRefreshToken(token: string): string {
+  return createHash('sha256').update(token).digest('hex');
+}
 
 const RESET_PASSWORD_TOKEN_TTL = '2h' as const;
 
@@ -64,7 +74,7 @@ export class AuthService {
     }
     this.assertUserIsActive(user.status as UserStatus);
 
-    const refreshTokenMatches = await bcrypt.compare(refreshToken, user.refreshToken);
+    const refreshTokenMatches = await bcrypt.compare(digestRefreshToken(refreshToken), user.refreshToken);
     if (!refreshTokenMatches) {
       throw new UnauthorizedException('Access denied');
     }
@@ -200,7 +210,7 @@ export class AuthService {
   }
 
   private async updateRefreshToken(userId: string, refreshToken: string) {
-    const hashedToken = await bcrypt.hash(refreshToken, 10);
+    const hashedToken = await bcrypt.hash(digestRefreshToken(refreshToken), 10);
     await this.prisma.user.update({
       where: { id: userId },
       data: { refreshToken: hashedToken },

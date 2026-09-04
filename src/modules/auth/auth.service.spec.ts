@@ -63,6 +63,48 @@ describe('AuthService', () => {
     ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
+  describe('refreshTokens', () => {
+    it('rejects a different refresh token that shares the first 72 bytes with the stored one', async () => {
+      // bcrypt silently truncates input at 72 bytes; JWTs for the same user share a long common prefix.
+      const prefix =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2YzY2NjhjMS1mN2VjLTQ0NTItYWE5YS1jNDM0Y2ZlMTY0ZTIi';
+      const issued = `${prefix}.AAAA`;
+      const forged = `${prefix}.BBBB`;
+      let stored: string | null = null;
+      const passwordHash = await bcrypt.hash('pass123', 10);
+      const { service, prisma, jwt } = buildService();
+      prisma.user.findUnique.mockImplementation(() =>
+        Promise.resolve({
+          id: 'u1',
+          email: 'a@b.c',
+          role: 'ORG_ADMIN',
+          organisationId: null,
+          status: UserStatus.ACTIVE,
+          passwordHash,
+          refreshToken: stored,
+        }),
+      );
+      prisma.user.update.mockImplementation(
+        ({ data }: { data: { refreshToken?: string | null } }) => {
+          if (typeof data.refreshToken === 'string') stored = data.refreshToken;
+          return Promise.resolve({});
+        },
+      );
+      jwt.signAsync
+        .mockResolvedValueOnce('access')
+        .mockResolvedValueOnce(issued);
+      await service.login('a@b.c', 'pass123');
+
+      await expect(service.refreshTokens('u1', forged)).rejects.toBeInstanceOf(
+        UnauthorizedException,
+      );
+      await expect(service.refreshTokens('u1', issued)).resolves.toEqual({
+        accessToken: 'token',
+        refreshToken: 'token',
+      });
+    });
+  });
+
   describe('setupPassword', () => {
     it('rejects a token that is not a setup-password token', async () => {
       const { service, prisma } = buildService({
