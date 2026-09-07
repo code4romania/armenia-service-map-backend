@@ -1,6 +1,7 @@
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { EmailService } from '../../../infrastructure/email/email.service.js';
+import { buildSetupPasswordUrl } from '../../../modules/auth/helpers/setup-password-link.js';
 
 export function splitContactName(contactName?: string | null) {
   const normalized = (contactName ?? '').trim().replace(/\s+/g, ' ');
@@ -30,14 +31,12 @@ export async function sendInvitationEmail(input: {
   config: ConfigService;
   emailService: EmailService;
 }) {
-  const token = await input.jwt.signAsync(
-    { sub: input.userId, type: 'setup-password' },
-    {
-      secret: input.config.getOrThrow('JWT_ACCESS_SECRET'),
-      expiresIn: '7d',
-    },
-  );
-  const setupUrl = `${input.config.get('CORS_ORIGIN', 'http://localhost:3001')}/setup-password?token=${token}`;
+  const setupUrl = await buildSetupPasswordUrl({
+    userId: input.userId,
+    expiresIn: '7d',
+    jwt: input.jwt,
+    config: input.config,
+  });
 
   await input.emailService.sendInvitation({
     to: input.email,

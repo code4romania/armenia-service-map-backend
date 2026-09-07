@@ -10,6 +10,7 @@ import { Role } from '../../common/enums/role.enum.js';
 import { UserStatus } from '../../common/enums/user-status.enum.js';
 import { EmailService } from '../../infrastructure/email/email.service.js';
 import { sendInvitationEmail } from '../../usecases/organisations/helpers/join-network-invitation.js';
+import { buildSetupPasswordUrl } from '../auth/helpers/setup-password-link.js';
 
 // Fields to never return to API
 const userSelect = {
@@ -167,14 +168,12 @@ export class UsersService {
 
   async resetPassword(id: string) {
     const user = await this.findOne(id);
-    const token = await this.jwt.signAsync(
-      { sub: id, type: 'setup-password' },
-      {
-        secret: this.config.getOrThrow('JWT_ACCESS_SECRET'),
-        expiresIn: '2h',
-      },
-    );
-    const resetUrl = `${this.config.get('CORS_ORIGIN', 'http://localhost:3001')}/setup-password?token=${token}`;
+    const resetUrl = await buildSetupPasswordUrl({
+      userId: id,
+      expiresIn: '2h',
+      jwt: this.jwt,
+      config: this.config,
+    });
 
     await this.prisma.user.update({
       where: { id },
