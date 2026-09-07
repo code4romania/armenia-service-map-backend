@@ -40,6 +40,7 @@ import { RejectOrganisationUseCase } from './organisations/reject-organisation.u
 // Users
 import { GetManyUsersUseCase } from './users/get-many-users.usecase.js';
 import { GetOneUserUseCase } from './users/get-one-user.usecase.js';
+import { RestoreUserUseCase } from './users/restore-user.usecase.js';
 import { CreateUserUseCase } from './users/create-user.usecase.js';
 import { UpdateUserUseCase } from './users/update-user.usecase.js';
 import { DeleteUserUseCase } from './users/delete-user.usecase.js';
@@ -127,6 +128,7 @@ const organisationUseCases = [
 const userUseCases = [
   GetManyUsersUseCase,
   GetOneUserUseCase,
+  RestoreUserUseCase,
   CreateUserUseCase,
   UpdateUserUseCase,
   DeleteUserUseCase,

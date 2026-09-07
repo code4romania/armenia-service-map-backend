@@ -13,6 +13,7 @@ export class GetManyUsersUseCase {
       organisationId?: string;
       status?: UserStatus;
       role?: Role;
+      deleted?: boolean;
     },
   ) {
     return this.usersService.findMany(query);

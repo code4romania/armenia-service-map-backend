@@ -26,6 +26,7 @@ const userSelect = {
   avatarUrl: true,
   createdAt: true,
   updatedAt: true,
+  deletedAt: true,
   organisation: { select: { id: true, name: true } },
 } as const;
 
@@ -45,6 +46,8 @@ export class UsersService {
       organisationId?: string;
       status?: UserStatus;
       role?: Role;
+      /** When true, list soft-deleted users instead of live ones. */
+      deleted?: boolean;
     },
   ) {
     const {
@@ -56,9 +59,10 @@ export class UsersService {
       organisationId,
       status,
       role,
+      deleted = false,
     } = query;
     const where = {
-      deletedAt: null,
+      deletedAt: deleted ? { not: null } : null,
       ...(organisationId ? { organisationId } : {}),
       ...(status ? { status } : {}),
       ...(role ? { role } : {}),
@@ -107,6 +111,12 @@ export class UsersService {
     password?: string;
   }) {
     const existing = await this.prisma.user.findUnique({ where: { email: data.email } });
+    if (existing?.deletedAt) {
+      throw this.exceptions.conflict(
+        'User',
+        `Email "${data.email}" belongs to a deleted user. Restore it from the Deleted users tab instead.`,
+      );
+    }
     if (existing) throw this.exceptions.conflict('User', `Email "${data.email}" already exists`);
 
     // Without an explicit password the account starts PENDING with a throwaway hash;
@@ -154,6 +164,17 @@ export class UsersService {
     return this.prisma.user.update({
       where: { id },
       data,
+      select: userSelect,
+    });
+  }
+
+  /** Reverses softDelete. Sessions are cleared so the user signs in fresh. */
+  async restore(id: string) {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user?.deletedAt) throw this.exceptions.notFound('Deleted user', id);
+    return this.prisma.user.update({
+      where: { id },
+      data: { deletedAt: null, refreshToken: null },
       select: userSelect,
     });
   }
