@@ -13,6 +13,7 @@ import { DeleteUserUseCase } from '../../usecases/users/delete-user.usecase.js';
 import { ActivateUserUseCase } from '../../usecases/users/activate-user.usecase.js';
 import { DeactivateUserUseCase } from '../../usecases/users/deactivate-user.usecase.js';
 import { ResetUserPasswordUseCase } from '../../usecases/users/reset-user-password.usecase.js';
+import { RestoreUserUseCase } from '../../usecases/users/restore-user.usecase.js';
 
 @Controller('admin/users')
 @Roles(Role.SUPER_ADMIN)
@@ -26,6 +27,7 @@ export class UsersController {
     private readonly activateUser: ActivateUserUseCase,
     private readonly deactivateUser: DeactivateUserUseCase,
     private readonly resetUserPassword: ResetUserPasswordUseCase,
+    private readonly restoreUser: RestoreUserUseCase,
   ) {}
 
   @Get()
@@ -56,6 +58,11 @@ export class UsersController {
   @Post(':id/deactivate')
   async deactivate(@Param('id') id: string) {
     return this.deactivateUser.execute(id);
+  }
+
+  @Post(':id/restore')
+  async restore(@Param('id') id: string) {
+    return this.restoreUser.execute(id);
   }
 
   @Post(':id/activate')
