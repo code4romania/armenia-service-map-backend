@@ -35,6 +35,11 @@ RUN set -ex; \
     libgcc \
     openssl
 
+ARG VERSION=dev
+ARG REVISION=unknown
+ENV APP_VERSION=$VERSION \
+    APP_REVISION=$REVISION
+
 USER node
 EXPOSE 3000
 
