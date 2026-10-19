@@ -5,10 +5,11 @@ import { DomainExceptionService } from '../../infrastructure/exceptions/domain-e
 import { PaginationQuery } from '../../common/interfaces/pagination.interface.js';
 import { paginatedResult } from '../../infrastructure/base/base-crud.service.js';
 import { ServiceStatus } from '../../common/enums/service-status.enum.js';
+import { flattenRegions, uniqueRegionIds } from '../organisations/organisation-regions.js';
 
 const serviceInclude = {
   organisation: { select: { id: true, name: true } },
-  region: { select: { id: true, name: true } },
+  regions: { include: { region: { select: { id: true, name: true } } } },
   topics: { include: { topic: { select: { id: true, name: true, slug: true } } } },
   targetGroups: { include: { targetGroup: { select: { id: true, name: true, status: true } } } },
 } as const;
@@ -37,8 +38,8 @@ export class ServicesService {
     // free-text search OR below.
     const andClauses: Prisma.ServiceWhereInput[] = [];
     if (regionId) {
-      // A service with no region is available nationwide, so it matches every region filter.
-      andClauses.push({ OR: [{ regionId }, { regionId: null }] });
+      // A service with no regions is available nationwide, so it matches every region filter.
+      andClauses.push({ OR: [{ regions: { some: { regionId } } }, { regions: { none: {} } }] });
     }
     if (availableOn) {
       andClauses.push(
@@ -80,7 +81,7 @@ export class ServicesService {
       this.prisma.service.count({ where }),
     ]);
 
-    return paginatedResult(data, total, page, perPage);
+    return paginatedResult(data.map(flattenRegions), total, page, perPage);
   }
 
   async findOne(id: string) {
@@ -89,7 +90,7 @@ export class ServicesService {
       include: serviceInclude,
     });
     if (!service) throw this.exceptions.notFound('Service', id);
-    return service;
+    return flattenRegions(service);
   }
 
   async create(data: {
@@ -103,7 +104,7 @@ export class ServicesService {
     howToAccessHy: string;
     organisationId?: string;
     externalOrganisationName?: string;
-    regionId?: string | null;
+    regionIds?: string[];
     isAvailable?: boolean;
     status?: ServiceStatus;
     availabilityStart?: Date;
@@ -112,15 +113,18 @@ export class ServicesService {
     topicIds?: string[];
   }) {
     this.assertOrganisationXor(data.organisationId, data.externalOrganisationName, true);
-    const { topicIds, targetGroupIds, externalOrganisationName, ...rest } = data;
+    const { topicIds, targetGroupIds, regionIds, externalOrganisationName, ...rest } = data;
     const serviceData = {
       ...rest,
       organisationId: externalOrganisationName ? null : data.organisationId,
       externalOrganisationName: externalOrganisationName ?? null,
     };
-    return this.prisma.service.create({
+    const service = await this.prisma.service.create({
       data: {
         ...serviceData,
+        ...(regionIds?.length
+          ? { regions: { create: uniqueRegionIds(regionIds).map((regionId) => ({ regionId })) } }
+          : {}),
         ...(topicIds?.length
           ? { topics: { create: topicIds.map((topicId) => ({ topicId })) } }
           : {}),
@@ -130,6 +134,7 @@ export class ServicesService {
       },
       include: serviceInclude,
     });
+    return flattenRegions(service);
   }
 
   async update(id: string, data: {
@@ -143,7 +148,7 @@ export class ServicesService {
     howToAccessHy?: string;
     organisationId?: string | null;
     externalOrganisationName?: string | null;
-    regionId?: string | null;
+    regionIds?: string[];
     isAvailable?: boolean;
     status?: ServiceStatus;
     availabilityStart?: Date | null;
@@ -153,13 +158,16 @@ export class ServicesService {
   }) {
     await this.findOne(id);
     this.assertOrganisationXor(data.organisationId, data.externalOrganisationName, false);
-    const { topicIds, targetGroupIds, organisationId, externalOrganisationName, ...rest } = data;
+    const { topicIds, targetGroupIds, regionIds, organisationId, externalOrganisationName, ...rest } = data;
 
     if (topicIds !== undefined) {
       await this.prisma.serviceTopic.deleteMany({ where: { serviceId: id } });
     }
     if (targetGroupIds !== undefined) {
       await this.prisma.serviceTargetGroup.deleteMany({ where: { serviceId: id } });
+    }
+    if (regionIds !== undefined) {
+      await this.prisma.serviceRegion.deleteMany({ where: { serviceId: id } });
     }
 
     const orgFields =
@@ -169,11 +177,14 @@ export class ServicesService {
           ? { organisationId, externalOrganisationName: null }
           : {};
 
-    return this.prisma.service.update({
+    const service = await this.prisma.service.update({
       where: { id },
       data: {
         ...rest,
         ...orgFields,
+        ...(regionIds !== undefined
+          ? { regions: { create: uniqueRegionIds(regionIds).map((regionId) => ({ regionId })) } }
+          : {}),
         ...(topicIds !== undefined
           ? { topics: { create: topicIds.map((topicId) => ({ topicId })) } }
           : {}),
@@ -183,6 +194,7 @@ export class ServicesService {
       },
       include: serviceInclude,
     });
+    return flattenRegions(service);
   }
 
   async softDelete(id: string) {
@@ -222,19 +234,21 @@ export class ServicesService {
 
   async publish(id: string) {
     await this.findOne(id);
-    return this.prisma.service.update({
+    const service = await this.prisma.service.update({
       where: { id },
       data: { status: ServiceStatus.PUBLISHED },
       include: serviceInclude,
     });
+    return flattenRegions(service);
   }
 
   async unpublish(id: string) {
     await this.findOne(id);
-    return this.prisma.service.update({
+    const service = await this.prisma.service.update({
       where: { id },
       data: { status: ServiceStatus.DRAFT },
       include: serviceInclude,
     });
+    return flattenRegions(service);
   }
 }

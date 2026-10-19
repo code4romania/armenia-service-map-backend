@@ -11,7 +11,7 @@ describe('NotifyMatchingSubscribersUseCase', () => {
           titleHy: 'Կլինիկա',
           shortDescription: 'desc',
           shortDescriptionHy: 'նկար',
-          regionId: 'r1',
+          regions: [{ regionId: 'r1' }, { regionId: 'r2' }],
           topics: [{ topicId: 't1' }, { topicId: 't2' }],
         }),
       },
@@ -35,6 +35,10 @@ describe('NotifyMatchingSubscribersUseCase', () => {
 
     await useCase.execute('svc1');
 
+    expect(subscriptions.findMatching).toHaveBeenCalledWith({
+      regionIds: ['r1', 'r2'],
+      topicIds: ['t1', 't2'],
+    });
     expect(email.sendNewServiceNotification).toHaveBeenCalledTimes(2);
     const firstCall = email.sendNewServiceNotification.mock.calls.find((c) => c[0].to === 'a@b.com')[0];
     expect(firstCall.serviceTitle).toBe('Կլինիկա'); // hy title

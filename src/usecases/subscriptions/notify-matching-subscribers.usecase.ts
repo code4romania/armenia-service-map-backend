@@ -27,14 +27,14 @@ export class NotifyMatchingSubscribersUseCase {
           titleHy: true,
           shortDescription: true,
           shortDescriptionHy: true,
-          regionId: true,
+          regions: { select: { regionId: true } },
           topics: { select: { topicId: true } },
         },
       });
       if (!service || service.status !== 'PUBLISHED') return;
 
       const matches = await this.subscriptions.findMatching({
-        regionId: service.regionId,
+        regionIds: service.regions.map((r) => r.regionId),
         topicIds: service.topics.map((t) => t.topicId),
       });
 

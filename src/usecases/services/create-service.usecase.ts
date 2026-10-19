@@ -21,7 +21,7 @@ export class CreateServiceUseCase {
     howToAccessHy: string;
     organisationId?: string;
     externalOrganisationName?: string;
-    regionId?: string | null;
+    regionIds?: string[];
     isAvailable?: boolean;
     status?: ServiceStatus;
     availabilityStart?: Date;

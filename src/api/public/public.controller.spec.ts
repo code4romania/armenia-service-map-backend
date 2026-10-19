@@ -75,7 +75,7 @@ describe('PublicController.getService', () => {
 describe('PublicController.regionServiceCounts', () => {
   it('counts only PUBLISHED services per region', async () => {
     const { controller, findMany } = makeControllerWithPrisma([
-      { svgPathId: 'AM-ER', _count: { services: 2 } },
+      { svgPathId: 'AM-ER', _count: { serviceRegions: 2 } },
     ]);
 
     const result = await controller.regionServiceCounts();
@@ -86,18 +86,18 @@ describe('PublicController.regionServiceCounts', () => {
         svgPathId: true,
         _count: {
           select: {
-            services: { where: { status: ServiceStatus.PUBLISHED, deletedAt: null } },
+            serviceRegions: { where: { service: { status: ServiceStatus.PUBLISHED, deletedAt: null } } },
           },
         },
       },
     });
   });
 
-  it('adds PUBLISHED nationwide (null-region) services to every region count', async () => {
+  it('adds PUBLISHED nationwide (no-region) services to every region count', async () => {
     const { controller, serviceCount } = makeControllerWithPrisma(
       [
-        { svgPathId: 'AM-ER', _count: { services: 2 } },
-        { svgPathId: 'AM-SH', _count: { services: 0 } },
+        { svgPathId: 'AM-ER', _count: { serviceRegions: 2 } },
+        { svgPathId: 'AM-SH', _count: { serviceRegions: 0 } },
       ],
       3,
     );
@@ -106,7 +106,7 @@ describe('PublicController.regionServiceCounts', () => {
 
     expect(result).toEqual({ 'AM-ER': 5, 'AM-SH': 3 });
     expect(serviceCount).toHaveBeenCalledWith({
-      where: { regionId: null, status: ServiceStatus.PUBLISHED, deletedAt: null },
+      where: { regions: { none: {} }, status: ServiceStatus.PUBLISHED, deletedAt: null },
     });
   });
 });
