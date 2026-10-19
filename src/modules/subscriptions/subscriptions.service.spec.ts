@@ -58,4 +58,17 @@ describe('SubscriptionsService', () => {
     });
     expect(matches).toHaveLength(1);
   });
+
+  it('findMatching drops the region filter for a nationwide service so every region subscriber matches', async () => {
+    const findMany = jest.fn().mockResolvedValue([]);
+    const prisma = { subscription: { findMany } };
+    const service = new SubscriptionsService(prisma as never);
+
+    await service.findMatching({ regionIds: [], topicIds: ['t1'] });
+
+    expect(findMany).toHaveBeenCalledWith({
+      where: { AND: [{ OR: [{ topicId: null }, { topicId: { in: ['t1'] } }] }] },
+      include: { subscriber: true },
+    });
+  });
 });
