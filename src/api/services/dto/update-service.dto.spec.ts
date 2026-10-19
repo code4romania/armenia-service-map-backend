@@ -8,12 +8,12 @@ function failedProps(payload: Record<string, unknown>) {
   return validateSync(dto).map((e) => e.property);
 }
 
-describe('UpdateServiceDto regionId', () => {
-  it('accepts regionId: null so an edit can switch a service to all regions', () => {
-    expect(failedProps({ regionId: null })).toHaveLength(0);
+describe('UpdateServiceDto regionIds', () => {
+  it('accepts an empty list so an edit can switch a service to all regions', () => {
+    expect(failedProps({ regionIds: [] })).toHaveLength(0);
   });
 
-  it('still rejects a non-UUID regionId', () => {
-    expect(failedProps({ regionId: 'all' })).toContain('regionId');
+  it('rejects a non-UUID entry', () => {
+    expect(failedProps({ regionIds: ['all'] })).toContain('regionIds');
   });
 });

@@ -56,14 +56,14 @@ export class PublicController {
       this.prisma.region.findMany({
         select: {
           svgPathId: true,
-          _count: { select: { services: { where: publicService } } },
+          _count: { select: { serviceRegions: { where: { service: publicService } } } },
         },
       }),
-      // A service with no region is available nationwide, so it counts towards every region.
-      this.prisma.service.count({ where: { regionId: null, ...publicService } }),
+      // A service with no regions is available nationwide, so it counts towards every region.
+      this.prisma.service.count({ where: { regions: { none: {} }, ...publicService } }),
     ]);
     return Object.fromEntries(
-      regions.map((r) => [r.svgPathId, r._count.services + nationwide]),
+      regions.map((r) => [r.svgPathId, r._count.serviceRegions + nationwide]),
     );
   }
 

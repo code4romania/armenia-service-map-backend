@@ -527,7 +527,7 @@ async function main() {
           ? getOrganisation(service.organisationKey).id
           : null,
         externalOrganisationName: service.externalOrganisationName ?? null,
-        regionId: getRegion(service.regionSlug).id,
+        regions: { create: [{ regionId: getRegion(service.regionSlug).id }] },
         status: service.status,
         isAvailable: service.isAvailable,
         topics: {

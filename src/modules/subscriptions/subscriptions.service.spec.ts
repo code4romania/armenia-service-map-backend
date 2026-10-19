@@ -45,12 +45,12 @@ describe('SubscriptionsService', () => {
     const prisma = { subscription: { findMany } };
     const service = new SubscriptionsService(prisma as never);
 
-    const matches = await service.findMatching({ regionId: 'r1', topicIds: ['t1', 't2'] });
+    const matches = await service.findMatching({ regionIds: ['r1', 'r2'], topicIds: ['t1', 't2'] });
 
     expect(findMany).toHaveBeenCalledWith({
       where: {
         AND: [
-          { OR: [{ regionId: null }, { regionId: 'r1' }] },
+          { OR: [{ regionId: null }, { regionId: { in: ['r1', 'r2'] } }] },
           { OR: [{ topicId: null }, { topicId: { in: ['t1', 't2'] } }] },
         ],
       },

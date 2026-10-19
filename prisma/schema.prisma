@@ -72,7 +72,7 @@ model Region {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   organisationRegions OrganisationRegion[]
-  services      Service[]
+  serviceRegions      ServiceRegion[]
   needReports   NeedReport[]
   searchLogs    SearchLog[]
   subscriptions Subscription[]
@@ -188,7 +188,6 @@ model Service {
   howToAccessHy     String?       @map("how_to_access_hy")
   organisationId           String?       @map("organisation_id")
   externalOrganisationName String?       @map("external_organisation_name")
-  regionId          String?       @map("region_id")
   status            ServiceStatus @default(DRAFT)
   isAvailable       Boolean       @default(true) @map("is_available")
   availabilityStart DateTime?     @map("availability_start")
@@ -198,11 +197,24 @@ model Service {
   deletedAt         DateTime?     @map("deleted_at")
 
   organisation  Organisation?      @relation(fields: [organisationId], references: [id])
-  region        Region?            @relation(fields: [regionId], references: [id])
+  // Empty = available in all regions.
+  regions       ServiceRegion[]
   topics        ServiceTopic[]
   targetGroups  ServiceTargetGroup[]
 
   @@map("services")
+}
+
+model ServiceRegion {
+  serviceId String @map("service_id")
+  regionId  String @map("region_id")
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  region  Region  @relation(fields: [regionId], references: [id], onDelete: Cascade)
+
+  @@id([serviceId, regionId])
+  @@index([regionId])
+  @@map("service_regions")
 }
 
 model ServiceTopic {

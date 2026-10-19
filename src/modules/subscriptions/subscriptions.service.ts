@@ -31,11 +31,12 @@ export class SubscriptionsService {
     return { subscriber, subscription };
   }
 
-  async findMatching(service: { regionId: string | null; topicIds: string[] }) {
+  /** `regionIds` empty = nationwide service, which only region-less subscriptions match. */
+  async findMatching(service: { regionIds: string[]; topicIds: string[] }) {
     return this.prisma.subscription.findMany({
       where: {
         AND: [
-          { OR: [{ regionId: null }, { regionId: service.regionId }] },
+          { OR: [{ regionId: null }, { regionId: { in: service.regionIds } }] },
           { OR: [{ topicId: null }, { topicId: { in: service.topicIds } }] },
         ],
       },

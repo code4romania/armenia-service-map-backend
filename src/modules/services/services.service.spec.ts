@@ -3,8 +3,8 @@ import { DomainExceptionService } from '../../infrastructure/exceptions/domain-e
 
 describe('ServicesService', () => {
   it('publishes a service by setting status to PUBLISHED', async () => {
-    const update = jest.fn().mockResolvedValue({ id: 's1', status: 'PUBLISHED' });
-    const findUnique = jest.fn().mockResolvedValue({ id: 's1', organisationId: 'o1' });
+    const update = jest.fn().mockResolvedValue({ id: 's1', status: 'PUBLISHED', regions: [] });
+    const findUnique = jest.fn().mockResolvedValue({ id: 's1', organisationId: 'o1', regions: [] });
     const prisma = {
       service: {
         findUnique,
@@ -24,7 +24,7 @@ describe('ServicesService', () => {
   });
 
   it('forwards howToAccess fields when creating a service', async () => {
-    const create = jest.fn().mockResolvedValue({ id: 's1' });
+    const create = jest.fn().mockResolvedValue({ id: 's1', regions: [] });
     const prisma = { service: { create } };
     const service = new ServicesService(prisma as never, new DomainExceptionService());
 
@@ -72,7 +72,7 @@ describe('ServicesService', () => {
     );
   });
 
-  it('includes nationwide (null-region) services when filtering by regionId', async () => {
+  it('includes nationwide (no-region) services when filtering by regionId', async () => {
     const findMany = jest.fn().mockResolvedValue([]);
     const count = jest.fn().mockResolvedValue(0);
     const prisma = { service: { findMany, count } };
@@ -83,7 +83,7 @@ describe('ServicesService', () => {
     const where = findMany.mock.calls[0][0].where;
     expect(where.regionId).toBeUndefined();
     expect(where.AND).toEqual(
-      expect.arrayContaining([{ OR: [{ regionId: 'r1' }, { regionId: null }] }]),
+      expect.arrayContaining([{ OR: [{ regions: { some: { regionId: 'r1' } } }, { regions: { none: {} } }] }]),
     );
     // The region OR must not clobber the free-text search OR.
     expect(where.OR).toEqual(expect.arrayContaining([{ title: { contains: 'food', mode: 'insensitive' } }]));
@@ -100,7 +100,7 @@ describe('ServicesService', () => {
 
     const where = findMany.mock.calls[0][0].where;
     expect(where.AND).toHaveLength(3);
-    expect(where.AND).toContainEqual({ OR: [{ regionId: 'r1' }, { regionId: null }] });
+    expect(where.AND).toContainEqual({ OR: [{ regions: { some: { regionId: 'r1' } } }, { regions: { none: {} } }] });
   });
 
   it('does not add the availability AND clause when availableOn is absent', async () => {
@@ -164,7 +164,7 @@ describe('ServicesService', () => {
   });
 
   it('creates a service with an external organisation name and null organisationId', async () => {
-    const create = jest.fn().mockResolvedValue({ id: 's1' });
+    const create = jest.fn().mockResolvedValue({ id: 's1', regions: [] });
     const prisma = { service: { create } };
     const service = new ServicesService(prisma as never, new DomainExceptionService());
 
@@ -233,8 +233,8 @@ describe('ServicesService', () => {
   });
 
   it('switches a service to an external organisation, clearing organisationId', async () => {
-    const update = jest.fn().mockResolvedValue({ id: 's1' });
-    const findUnique = jest.fn().mockResolvedValue({ id: 's1', organisationId: 'o1' });
+    const update = jest.fn().mockResolvedValue({ id: 's1', regions: [] });
+    const findUnique = jest.fn().mockResolvedValue({ id: 's1', organisationId: 'o1', regions: [] });
     const prisma = { service: { findUnique, update } };
     const service = new ServicesService(prisma as never, new DomainExceptionService());
 
@@ -252,8 +252,8 @@ describe('ServicesService', () => {
   });
 
   it('switches a service back to a network organisation, clearing external name', async () => {
-    const update = jest.fn().mockResolvedValue({ id: 's1' });
-    const findUnique = jest.fn().mockResolvedValue({ id: 's1', organisationId: null });
+    const update = jest.fn().mockResolvedValue({ id: 's1', regions: [] });
+    const findUnique = jest.fn().mockResolvedValue({ id: 's1', organisationId: null, regions: [] });
     const prisma = { service: { findUnique, update } };
     const service = new ServicesService(prisma as never, new DomainExceptionService());
 
@@ -271,7 +271,7 @@ describe('ServicesService', () => {
 
   it('rejects an update setting both organisationId and externalOrganisationName', async () => {
     const update = jest.fn();
-    const findUnique = jest.fn().mockResolvedValue({ id: 's1', organisationId: 'o1' });
+    const findUnique = jest.fn().mockResolvedValue({ id: 's1', organisationId: 'o1', regions: [] });
     const prisma = { service: { findUnique, update } };
     const service = new ServicesService(prisma as never, new DomainExceptionService());
 
@@ -282,8 +282,8 @@ describe('ServicesService', () => {
   });
 
   it('leaves organisation fields untouched when neither is provided on update', async () => {
-    const update = jest.fn().mockResolvedValue({ id: 's1' });
-    const findUnique = jest.fn().mockResolvedValue({ id: 's1', organisationId: 'o1' });
+    const update = jest.fn().mockResolvedValue({ id: 's1', regions: [] });
+    const findUnique = jest.fn().mockResolvedValue({ id: 's1', organisationId: 'o1', regions: [] });
     const prisma = { service: { findUnique, update } };
     const service = new ServicesService(prisma as never, new DomainExceptionService());
 
@@ -292,5 +292,116 @@ describe('ServicesService', () => {
     const callArg = update.mock.calls[0][0];
     expect(callArg.data).not.toHaveProperty('organisationId');
     expect(callArg.data).not.toHaveProperty('externalOrganisationName');
+  });
+
+  it('creates one join row per unique region and returns regions flattened by name', async () => {
+    const create = jest.fn().mockResolvedValue({
+      id: 's1',
+      regions: [
+        { region: { id: 'r2', name: 'Shirak' } },
+        { region: { id: 'r1', name: 'Lori' } },
+      ],
+    });
+    const prisma = { service: { create } };
+    const service = new ServicesService(
+      prisma as never,
+      new DomainExceptionService(),
+    );
+
+    const result = await service.create({
+      titleHy: 'Վ',
+      shortDescriptionHy: 'կ',
+      descriptionHy: 'ն',
+      howToAccessHy: 'հ',
+      organisationId: 'o1',
+      regionIds: ['r1', 'r2', 'r1'],
+    });
+
+    expect(create.mock.calls[0][0].data.regions).toEqual({
+      create: [{ regionId: 'r1' }, { regionId: 'r2' }],
+    });
+    expect(result.regions).toEqual([
+      { id: 'r1', name: 'Lori' },
+      { id: 'r2', name: 'Shirak' },
+    ]);
+  });
+
+  it('creates no join rows for a nationwide service (empty regionIds)', async () => {
+    const create = jest.fn().mockResolvedValue({ id: 's1', regions: [] });
+    const prisma = { service: { create } };
+    const service = new ServicesService(
+      prisma as never,
+      new DomainExceptionService(),
+    );
+
+    await service.create({
+      titleHy: 'Վ',
+      shortDescriptionHy: 'կ',
+      descriptionHy: 'ն',
+      howToAccessHy: 'հ',
+      organisationId: 'o1',
+      regionIds: [],
+    });
+
+    expect(create.mock.calls[0][0].data.regions).toBeUndefined();
+  });
+
+  it('replaces the region set on update when regionIds is provided', async () => {
+    const update = jest.fn().mockResolvedValue({ id: 's1', regions: [] });
+    const findUnique = jest.fn().mockResolvedValue({ id: 's1', regions: [] });
+    const deleteMany = jest.fn().mockResolvedValue({ count: 1 });
+    const prisma = {
+      service: { findUnique, update },
+      serviceRegion: { deleteMany },
+    };
+    const service = new ServicesService(
+      prisma as never,
+      new DomainExceptionService(),
+    );
+
+    await service.update('s1', { regionIds: ['r3'] });
+
+    expect(deleteMany).toHaveBeenCalledWith({ where: { serviceId: 's1' } });
+    expect(update.mock.calls[0][0].data.regions).toEqual({
+      create: [{ regionId: 'r3' }],
+    });
+  });
+
+  it('clears all regions on update with an empty list (switch to nationwide)', async () => {
+    const update = jest.fn().mockResolvedValue({ id: 's1', regions: [] });
+    const findUnique = jest.fn().mockResolvedValue({ id: 's1', regions: [] });
+    const deleteMany = jest.fn().mockResolvedValue({ count: 2 });
+    const prisma = {
+      service: { findUnique, update },
+      serviceRegion: { deleteMany },
+    };
+    const service = new ServicesService(
+      prisma as never,
+      new DomainExceptionService(),
+    );
+
+    await service.update('s1', { regionIds: [] });
+
+    expect(deleteMany).toHaveBeenCalledWith({ where: { serviceId: 's1' } });
+    expect(update.mock.calls[0][0].data.regions).toEqual({ create: [] });
+  });
+
+  it('leaves regions untouched on update when regionIds is omitted', async () => {
+    const update = jest.fn().mockResolvedValue({ id: 's1', regions: [] });
+    const findUnique = jest.fn().mockResolvedValue({ id: 's1', regions: [] });
+    const deleteMany = jest.fn();
+    const prisma = {
+      service: { findUnique, update },
+      serviceRegion: { deleteMany },
+    };
+    const service = new ServicesService(
+      prisma as never,
+      new DomainExceptionService(),
+    );
+
+    await service.update('s1', { titleHy: 'Նոր' });
+
+    expect(deleteMany).not.toHaveBeenCalled();
+    expect(update.mock.calls[0][0].data.regions).toBeUndefined();
   });
 });
