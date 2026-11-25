@@ -6,7 +6,9 @@ import {
   Param,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { PrismaService } from '../../infrastructure/prisma/prisma.service.js';
 import { SearchServicesUseCase } from '../../usecases/services/search-services.usecase.js';
@@ -16,12 +18,14 @@ import { LogSearchUseCase } from '../../usecases/analytics/log-search.usecase.js
 import { CreateJoinNetworkRequestUseCase } from '../../usecases/organisations/create-join-network-request.usecase.js';
 import { CreateSubscriptionUseCase } from '../../usecases/subscriptions/create-subscription.usecase.js';
 import { UnsubscribeUseCase } from '../../usecases/subscriptions/unsubscribe.usecase.js';
+import { SubmitFeedbackUseCase } from '../../usecases/feedback/submit-feedback.usecase.js';
 import { ServiceQueryDto } from '../services/dto/service-query.dto.js';
 import { CreateNeedDto } from '../needs/dto/create-need.dto.js';
 import { JoinNetworkDto } from './dto/join-network.dto.js';
 import { LogPublicSearchBatchDto } from './dto/log-public-search-batch.dto.js';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto.js';
 import { UnsubscribeDto } from './dto/unsubscribe.dto.js';
+import { SubmitFeedbackDto } from './dto/submit-feedback.dto.js';
 import { EntityStatus } from '../../common/enums/entity-status.enum.js';
 import { ServiceStatus } from '../../common/enums/service-status.enum.js';
 import { withAvailabilityState } from '../../common/availability/availability-state.js';
@@ -38,6 +42,7 @@ export class PublicController {
     private readonly createJoinNetworkRequest: CreateJoinNetworkRequestUseCase,
     private readonly createSubscription: CreateSubscriptionUseCase,
     private readonly unsubscribe: UnsubscribeUseCase,
+    private readonly submitFeedbackUseCase: SubmitFeedbackUseCase,
   ) {}
 
   @Get('regions')
@@ -137,5 +142,12 @@ export class PublicController {
   @Post('subscriptions/unsubscribe')
   async unsubscribeFromServices(@Body() dto: UnsubscribeDto) {
     return this.unsubscribe.execute(dto.token);
+  }
+
+  @Post('feedback')
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 5, ttl: 600_000 } })
+  async submitFeedback(@Body() dto: SubmitFeedbackDto) {
+    return this.submitFeedbackUseCase.execute(dto);
   }
 }

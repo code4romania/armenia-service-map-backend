@@ -16,6 +16,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module.js';
 import { UploadModule } from './modules/upload/upload.module.js';
 import { EmailModule } from './infrastructure/email/email.module.js';
 import { NotificationsModule } from './modules/notifications/notifications.module.js';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { ApiModule } from './api/api.module.js';
 
 @Module({
@@ -24,6 +25,8 @@ import { ApiModule } from './api/api.module.js';
       isGlobal: true,
       validate,
     }),
+    // Guard is applied per-route (public feedback), not globally.
+    ThrottlerModule.forRoot([{ name: 'default', ttl: 600_000, limit: 5 }]),
     PrismaModule,
     InfrastructureModule,
     AuthModule,

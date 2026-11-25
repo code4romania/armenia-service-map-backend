@@ -9,6 +9,12 @@ import { UploadModule } from '../modules/upload/upload.module.js';
 import { NotificationsModule } from '../modules/notifications/notifications.module.js';
 import { AuthModule } from '../modules/auth/auth.module.js';
 import { SubscriptionsModule } from '../modules/subscriptions/subscriptions.module.js';
+import { FeedbackModule } from '../modules/feedback/feedback.module.js';
+// Feedback
+import { SubmitFeedbackUseCase } from './feedback/submit-feedback.usecase.js';
+import { ListFeedbackUseCase } from './feedback/list-feedback.usecase.js';
+import { GetFeedbackSummaryUseCase } from './feedback/get-feedback-summary.usecase.js';
+import { ExportFeedbackCsvUseCase } from './feedback/export-feedback-csv.usecase.js';
 // Taxonomy
 import { GetManyTopicsUseCase } from './taxonomy/get-many-topics.usecase.js';
 import { GetOneTopicUseCase } from './taxonomy/get-one-topic.usecase.js';
@@ -177,6 +183,13 @@ const analyticsUseCases = [
   GetOrgDashboardTrendsUseCase,
 ];
 
+const feedbackUseCases = [
+  SubmitFeedbackUseCase,
+  ListFeedbackUseCase,
+  GetFeedbackSummaryUseCase,
+  ExportFeedbackCsvUseCase,
+];
+
 const uploadUseCases = [GetPresignedUrlUseCase];
 
 const notificationUseCases = [
@@ -193,8 +206,8 @@ const subscriptionUseCases = [
 ];
 
 @Module({
-  imports: [TaxonomyModule, OrganisationsModule, UsersModule, ServicesModule, NeedsModule, AnalyticsModule, UploadModule, NotificationsModule, AuthModule, SubscriptionsModule],
-  providers: [...taxonomyUseCases, ...organisationUseCases, ...userUseCases, ...serviceUseCases, ...needUseCases, ...analyticsUseCases, ...uploadUseCases, ...notificationUseCases, ...subscriptionUseCases],
-  exports: [...taxonomyUseCases, ...organisationUseCases, ...userUseCases, ...serviceUseCases, ...needUseCases, ...analyticsUseCases, ...uploadUseCases, ...notificationUseCases, ...subscriptionUseCases],
+  imports: [TaxonomyModule, OrganisationsModule, UsersModule, ServicesModule, NeedsModule, AnalyticsModule, UploadModule, NotificationsModule, AuthModule, SubscriptionsModule, FeedbackModule],
+  providers: [...taxonomyUseCases, ...organisationUseCases, ...userUseCases, ...serviceUseCases, ...needUseCases, ...analyticsUseCases, ...uploadUseCases, ...notificationUseCases, ...subscriptionUseCases, ...feedbackUseCases],
+  exports: [...taxonomyUseCases, ...organisationUseCases, ...userUseCases, ...serviceUseCases, ...needUseCases, ...analyticsUseCases, ...uploadUseCases, ...notificationUseCases, ...subscriptionUseCases, ...feedbackUseCases],
 })
 export class UseCaseModule {}

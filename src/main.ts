@@ -1,14 +1,23 @@
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module.js';
 import { GlobalExceptionFilter } from './infrastructure/filters/global-exception.filter.js';
 import { runDatabaseInitFromEnv } from './infrastructure/bootstrap/database-init.js';
+import { parseTrustProxyHops } from './infrastructure/bootstrap/trust-proxy.js';
 
 async function bootstrap() {
   await runDatabaseInitFromEnv();
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const config = app.get(ConfigService);
+
+  // Trust the first reverse-proxy hop so req.ip is the real client (throttling).
+  // Invalid/blank values fall back to 1 instead of silently disabling trust.
+  app.set(
+    'trust proxy',
+    parseTrustProxyHops(config.get<string>('TRUST_PROXY_HOPS')),
+  );
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -23,6 +32,8 @@ async function bootstrap() {
   app.enableCors({
     origin: config.get('CORS_ORIGIN'),
     credentials: true,
+    // Let the cross-origin frontend read download filenames (e.g. the feedback CSV export).
+    exposedHeaders: ['Content-Disposition'],
   });
 
   app.setGlobalPrefix('api');
