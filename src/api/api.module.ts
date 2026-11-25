@@ -9,6 +9,7 @@ import { OrgServicesController } from './org/org-services.controller.js';
 import { NeedsController } from './needs/needs.controller.js';
 import { OrgNeedsController } from './org/org-needs.controller.js';
 import { AnalyticsController } from './analytics/analytics.controller.js';
+import { FeedbackController } from './feedback/feedback.controller.js';
 import { OrgAnalyticsController } from './org/org-analytics.controller.js';
 import { OrgProfileController } from './org/org-profile.controller.js';
 import { UploadController } from './upload/upload.controller.js';
@@ -32,6 +33,7 @@ import { NeedsModule } from '../modules/needs/needs.module.js';
     NeedsController,
     OrgNeedsController,
     AnalyticsController,
+    FeedbackController,
     OrgAnalyticsController,
     OrgProfileController,
     UploadController,
