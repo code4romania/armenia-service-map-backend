@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module.js';
@@ -7,8 +8,11 @@ import { runDatabaseInitFromEnv } from './infrastructure/bootstrap/database-init
 
 async function bootstrap() {
   await runDatabaseInitFromEnv();
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const config = app.get(ConfigService);
+
+  // Trust the first reverse-proxy hop so req.ip is the real client (throttling).
+  app.set('trust proxy', Number(config.get<string>('TRUST_PROXY_HOPS') ?? 1));
 
   app.useGlobalPipes(
     new ValidationPipe({

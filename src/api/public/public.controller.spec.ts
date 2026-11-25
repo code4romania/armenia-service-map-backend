@@ -1,4 +1,5 @@
 import { NotFoundException } from '@nestjs/common';
+import 'reflect-metadata';
 import { PublicController } from './public.controller';
 import { ServiceStatus } from '../../common/enums/service-status.enum.js';
 
@@ -14,6 +15,7 @@ function makeController(getOneResult: unknown) {
     null as never,
     null as never,
     null as never,
+    null as never,
   );
   return { controller, getOneService };
 }
@@ -24,6 +26,7 @@ function makeControllerWithPrisma(regions: unknown[], nationwideCount = 0) {
   const prisma = { region: { findMany }, service: { count: serviceCount } };
   const controller = new PublicController(
     prisma as never,
+    null as never,
     null as never,
     null as never,
     null as never,
@@ -108,5 +111,40 @@ describe('PublicController.regionServiceCounts', () => {
     expect(serviceCount).toHaveBeenCalledWith({
       where: { regions: { none: {} }, status: ServiceStatus.PUBLISHED, deletedAt: null },
     });
+  });
+});
+
+describe('PublicController.submitFeedback', () => {
+  const dto = {
+    usefulness: 'VERY',
+    found: 'YES',
+    fromKarabakh: 'NO',
+    locale: 'hy',
+    pagePath: '/services',
+  } as never;
+
+  it('delegates to SubmitFeedbackUseCase and returns its result', async () => {
+    const submitFeedback = { execute: jest.fn().mockResolvedValue({ id: 'f1' }) };
+    const controller = new PublicController(
+      null as never,
+      null as never,
+      null as never,
+      null as never,
+      null as never,
+      null as never,
+      null as never,
+      null as never,
+      submitFeedback as never,
+    );
+
+    await expect(controller.submitFeedback(dto)).resolves.toEqual({ id: 'f1' });
+    expect(submitFeedback.execute).toHaveBeenCalledWith(dto);
+  });
+
+  it('is throttled to 5 requests per 10 minutes', () => {
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    const handler = PublicController.prototype.submitFeedback;
+    expect(Reflect.getMetadata('THROTTLER:LIMITdefault', handler)).toBe(5);
+    expect(Reflect.getMetadata('THROTTLER:TTLdefault', handler)).toBe(600_000);
   });
 });
