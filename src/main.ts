@@ -27,6 +27,8 @@ async function bootstrap() {
   app.enableCors({
     origin: config.get('CORS_ORIGIN'),
     credentials: true,
+    // Let the cross-origin frontend read download filenames (e.g. the feedback CSV export).
+    exposedHeaders: ['Content-Disposition'],
   });
 
   app.setGlobalPrefix('api');
