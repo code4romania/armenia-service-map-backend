@@ -347,6 +347,8 @@ async function main() {
     prisma.targetGroup.create({ data: { name: 'People with Disabilities', status: EntityStatus.ACTIVE } }),
     prisma.targetGroup.create({ data: { name: 'Single Parents', status: EntityStatus.ACTIVE } }),
     prisma.targetGroup.create({ data: { name: 'Youth', status: EntityStatus.ACTIVE } }),
+    prisma.targetGroup.create({ data: { name: 'LGBT Persons', status: EntityStatus.ACTIVE } }),
+    prisma.targetGroup.create({ data: { name: 'People with HIV', status: EntityStatus.ACTIVE } }),
   ]);
   const targetGroupByName = new Map(createdTargetGroups.map((group) => [group.name, group]));
 
